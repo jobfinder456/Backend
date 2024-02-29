@@ -1,5 +1,5 @@
 const express = require("express");
-const { getData, insertData, updateData } = require('../db/job');
+const { getData, insertData, updateData, deleteData } = require('../db/job');
 const router = express.Router();
 
 // Middleware to parse JSON request bodies
@@ -27,11 +27,21 @@ router.put("/update/:id", async(req,res) =>{
     const { company_name, website, job_title, work_loc, remote, job_link, description } = req.body;
     try {
         const result = await updateData(id,company_name, website, job_title, work_loc, remote, job_link, description);
-        res.status(201).json({ message: "Data inserted successfully", result });
+        res.status(201).json({ message: "Data updated successfully", result });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: "Internal server error" });
     }
 })
 
+router.delete("/delete/:id", async(req,res)=>{
+  const { id }= req.params 
+  try {
+    const result = await deleteData(id);
+    res.status(201).json({ message: "Data deleted successfully", result });
+} catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+}
+})
 module.exports = router;
