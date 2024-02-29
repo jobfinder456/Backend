@@ -1,6 +1,6 @@
 const {Client} = require("pg");
 
-async function createUsersTable() {
+/*async function createUsersTable() {
     const client = new Client({
         connectionString: "postgresql://nikhilchopra788:JeobHvR8W0SA@ep-nameless-sky-a5r1955s.us-east-2.aws.neon.tech/neondb?sslmode=require"
     });
@@ -12,15 +12,15 @@ async function createUsersTable() {
             website VARCHAR(35) NOT NULL,
             job_title VARCHAR(30) NOT NULL,
             work_loc VARCHAR(80) NOT NULL,
-            remote BOOLEAN NOT NULL DEFAULT false
-            job_link VARCHAR(50) NOTNULL,
+            remote BOOLEAN NOT NULL DEFAULT false,
+            job_link VARCHAR(50) NOT NULL,
             description VARCHAR(850) NOT NULL
         );
     `)
     console.log(result)
     await client.end();
 }
-
+*/
 async function getData() {
     const client = new Client({
         connectionString: "postgresql://nikhilchopra788:JeobHvR8W0SA@ep-nameless-sky-a5r1955s.us-east-2.aws.neon.tech/neondb?sslmode=require"
@@ -105,8 +105,8 @@ async function updateData(id, company_name, website, job_title, work_loc, remote
     }
 }
 
+
 module.exports = {
-    createUsersTable,
     getData,
     insertData,
     deleteData,
