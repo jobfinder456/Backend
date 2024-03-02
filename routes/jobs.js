@@ -1,5 +1,5 @@
 const express = require("express");
-const { getData, insertData, updateData, deleteData } = require('../db/job');
+const { getData, insertData, updateData, deleteData, getJobData } = require('../db/job');
 const router = express.Router();
 
 // Middleware to parse JSON request bodies
@@ -9,6 +9,17 @@ router.get("/list", async (req, res) => {
     const all = await getData();
     res.json({ all });
 });
+
+router.get("/job/:id", async(req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await getJobData(id)
+        res.status(201).json({ message: "Job found", result });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+})
 
 router.post("/insert", async (req, res) => {
     // Ensure req.body is properly parsed before accessing its properties
@@ -22,7 +33,7 @@ router.post("/insert", async (req, res) => {
     }
 });
 
-router.put("/update/:id", async(req,res) =>{
+router.put("/update/:id", async(req,res) => {
     const { id } = req.params
     const { company_name, website, job_title, work_loc, remote, job_link, description } = req.body;
     try {
