@@ -39,6 +39,25 @@ async function getData() {
     }
 }
 
+async function getJobData(id) {
+    const client = new Client({
+        connectionString: "postgresql://nikhilchopra788:JeobHvR8W0SA@ep-nameless-sky-a5r1955s.us-east-2.aws.neon.tech/neondb?sslmode=require"
+    })
+
+    try {
+        await client.connect()
+        const query = `SELECT * FROM AT WHERE id = $1`;
+        const value = [id] 
+        const result = await client.query(query, value)
+        console.log("job found", result.rows)
+        return result
+    } catch (error) {
+        console.error("Error executing query:", error);
+    } finally {
+        await client.end()
+    }
+}
+
 async function insertData(company_name,website,job_title,work_loc,remote,job_link,description){
     const client = new Client({
         connectionString: "postgresql://nikhilchopra788:JeobHvR8W0SA@ep-nameless-sky-a5r1955s.us-east-2.aws.neon.tech/neondb?sslmode=require"
@@ -110,5 +129,6 @@ module.exports = {
     getData,
     insertData,
     deleteData,
-    updateData
+    updateData,
+    getJobData
 };
