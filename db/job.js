@@ -125,14 +125,25 @@ async function insertData(company_name,website,job_title,work_loc, commitment,re
     
     try {
         await client.connect();
+
+        const isNewUSer = `SELECT * FROM JB_USERS WHERE email = $1`
+        const valueUser = [email]
+        const isResultUser = await client.query(isNewUSer, valueUser)
+
+        if(isResultUser.rows.length == 0){
+            const u_query = 'INSERT INTO JB_USERS (name, email) VALUES ($1, $2)'
+            const u_values = [name,email]
+            const u_result = await client.query(u_query, u_values) 
+            console.log("rows affected", j_result.rows, u_result.rows);
+        }
+
+        //create job by foriegn key
         const j_query = 'INSERT INTO JB_JOBS (company_name, website, job_title, work_loc, commitment, remote, job_link, description) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)';
         const j_values = [company_name, website, job_title, work_loc, commitment, remote, job_link, description];
         const j_result = await client.query(j_query, j_values);
-        const u_query = 'INSERT INTO JB_USERS (name, email) VALUES ($1, $2)'
-        const u_values = [name,email]
-        const u_result = await client.query(u_query, u_values) 
-        console.log("rows affected", j_result.rows, u_result.rows);
-        return j_result, u_result
+        
+        return j_result
+
     } catch (error) {
         console.error("Error executing query:", error);
     } finally {
