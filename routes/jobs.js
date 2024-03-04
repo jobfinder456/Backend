@@ -1,5 +1,5 @@
 const express = require("express");
-const { getData, insertData, updateData, deleteData, getJobData } = require('../db/job');
+const { getData, insertData, updateData, deleteData, getJobData, getuserjobData } = require('../db/job');
 const zod = require("zod")
 const router = express.Router();
 
@@ -16,7 +16,7 @@ const postSchema = zod.object({
     description: zod.string().min(50),
 })
 
-router.get("/users-list", async(req,res)=>{
+router.post("/users-list", async(req,res)=>{
     const {email} = req.body
     const all = await getuserjobData(email)
     res.json({ all })
