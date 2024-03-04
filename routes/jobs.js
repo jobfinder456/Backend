@@ -45,11 +45,11 @@ router.post("/insert", async (req, res) => {
 
     try {
 
-        const {success} = postSchema.safeParse(req.body)
+        /*const {success} = postSchema.safeParse(req.body)
         if(!success) {
             return res.status(411).json({message: "Invalid inputs"})
         }
-
+        */
         const result = await insertData(company_name, website, job_title, work_loc, commitment, remote, job_link, description, name, email);
         res.status(201).json({ message: "Data inserted successfully", result });
 
