@@ -118,38 +118,48 @@ async function getJobData(id) {
     }
 }
 
-async function insertData(company_name,website,job_title,work_loc, commitment,remote,job_link,description,name, email){
+async function insertData(company_name, website, job_title, work_loc, commitment, remote, job_link, description, name, email) {
     const client = new Client({
         connectionString: "postgresql://nikhilchopra788:homVKH6tCrJ5@ep-sparkling-dawn-a1iplsg1.ap-southeast-1.aws.neon.tech/jobfinder?sslmode=require"
     });
-    
+
     try {
         await client.connect();
 
-        const isNewUSer = `SELECT * FROM JB_USERS WHERE email = $1`
-        const valueUser = [email]
-        const isResultUser = await client.query(isNewUSer, valueUser)
+        // Check if the user already exists
+        const checkUserQuery = 'SELECT id FROM JB_USERS WHERE email = $1';
+        const checkUserValues = [email];
+        const { rows: existingUsers } = await client.query(checkUserQuery, checkUserValues);
 
-        if(isResultUser.rows.length == 0){
-            const u_query = 'INSERT INTO JB_USERS (name, email) VALUES ($1, $2)'
-            const u_values = [name,email]
-            const u_result = await client.query(u_query, u_values) 
-            console.log("rows affected", j_result.rows, u_result.rows);
+        let userId;
+
+        // If user doesn't exist, insert the user
+        if (existingUsers.length === 0) {
+            const insertUserQuery = 'INSERT INTO JB_USERS (name, email) VALUES ($1, $2) RETURNING id';
+            const insertUserValues = [name, email];
+            const { rows: insertedUser } = await client.query(insertUserQuery, insertUserValues);
+            userId = insertedUser[0].id;
+            console.log("New user inserted:", insertedUser);
+        } else {
+            userId = existingUsers[0].id;
         }
 
-        //create job by foriegn key
-        const j_query = 'INSERT INTO JB_JOBS (company_name, website, job_title, work_loc, commitment, remote, job_link, description) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)';
-        const j_values = [company_name, website, job_title, work_loc, commitment, remote, job_link, description];
-        const j_result = await client.query(j_query, j_values);
-        
-        return j_result
+        // Insert job using the user_id
+        const insertJobQuery = 'INSERT INTO JB_JOBS (user_id, company_name, website, job_title, work_loc, commitment, remote, job_link, description) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)';
+        const insertJobValues = [userId, company_name, website, job_title, work_loc, commitment, remote, job_link, description];
+        const { rows: insertedJob } = await client.query(insertJobQuery, insertJobValues);
+
+        console.log("Job inserted:");
+
+        return insertedJob;
 
     } catch (error) {
         console.error("Error executing query:", error);
     } finally {
-        await client.end(); // Close the client connection after the query is executed
+        await client.end();
     }
 }
+
 
 async function deleteData(id) {
     const client = new Client({
