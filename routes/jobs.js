@@ -16,6 +16,12 @@ const postSchema = zod.object({
     description: zod.string().min(50),
 })
 
+router.get("/users-list", async(req,res)=>{
+    const {email} = req.body
+    const all = await getuserjobData(email)
+    res.json({ all })
+})
+
 router.get("/list", async (req, res) => {
     const all = await getData();
     res.json({ all });
@@ -35,7 +41,7 @@ router.get("/job/:id", async(req, res) => {
 router.post("/insert", async (req, res) => {
     // Ensure req.body is properly parsed before accessing its properties
 
-    const { company_name, website, job_title, work_loc, remote, job_link, description } = req.body;
+    const { company_name, website, job_title, work_loc, commitment, remote, job_link, description, name, email } = req.body;
 
     try {
 
@@ -44,7 +50,7 @@ router.post("/insert", async (req, res) => {
             return res.status(411).json({message: "Invalid inputs"})
         }
 
-        const result = await insertData(company_name, website, job_title, work_loc, remote, job_link, description);
+        const result = await insertData(company_name, website, job_title, work_loc, commitment, remote, job_link, description, name, email);
         res.status(201).json({ message: "Data inserted successfully", result });
 
     } catch (error) {
@@ -56,7 +62,7 @@ router.post("/insert", async (req, res) => {
 router.put("/update/:id", async(req,res) => {
 
     const { id } = req.params
-    const { company_name, website, job_title, work_loc, remote, job_link, description } = req.body;
+    const { company_name, website, job_title, work_loc, commitment, remote, job_link, description } = req.body;
 
     try {
 
@@ -65,7 +71,7 @@ router.put("/update/:id", async(req,res) => {
             return res.status(411).json({message: "Invalid inputs"})
         }
 
-        const result = await updateData(id,company_name, website, job_title, work_loc, remote, job_link, description);
+        const result = await updateData(id,company_name, website, job_title, work_loc, commitment, remote, job_link, description);
         res.status(201).json({ message: "Data updated successfully", result });
 
     } catch (error) {
