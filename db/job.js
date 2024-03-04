@@ -49,6 +49,9 @@ async function getuserjobData(email) {
     try {
         await client.connect();
 
+        // Log the email for debugging
+        console.log('Email:', email);
+
         // Query to get the user's ID based on the provided email
         const userQuery = 'SELECT id FROM JB_USERS WHERE email = $1';
         const userResult = await client.query(userQuery, [email]);
@@ -60,13 +63,13 @@ async function getuserjobData(email) {
 
         const userId = userResult.rows[0].id;
 
-        // Query to fetch jobs associated with the user's ID
-        const jobQuery = `
-            SELECT * 
-            FROM JB_JOBS 
-            WHERE user_id = $1`;
+        // Log the user ID for debugging
+        console.log('User ID:', userId);
 
+        // Query to fetch jobs associated with the user's ID
+        const jobQuery = 'SELECT * FROM JB_JOBS WHERE user_id = $1';
         const jobResult = await client.query(jobQuery, [userId]);
+
         console.log("Jobs fetched for user with email", email, ":", jobResult.rows);
         return jobResult.rows;
     } catch (error) {
@@ -129,7 +132,7 @@ async function insertData(company_name,website,job_title,work_loc, commitment,re
         const u_values = [name,email]
         const u_result = await client.query(u_query, u_values) 
         console.log("rows affected", j_result.rows, u_result.rows);
-        return result
+        return j_result, u_result
     } catch (error) {
         console.error("Error executing query:", error);
     } finally {
