@@ -66,11 +66,6 @@ router.put("/update/:id", async(req,res) => {
 
     try {
 
-        const {success} = postSchema.safeParse(req.body)
-        if(!success) {
-            return res.status(411).json({message: "Invalid inputs"})
-        }
-
         const result = await updateData(id,company_name, website, job_title, work_loc, commitment, remote, job_link, description);
         res.status(201).json({ message: "Data updated successfully", result });
 

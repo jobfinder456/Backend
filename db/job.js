@@ -39,8 +39,8 @@ async function createjobsTable() {
     `)
     console.log(result)
     await client.end();
-}
-*/
+} */
+
 async function getuserjobData(email) {
     const client = new Client({
         connectionString: "postgresql://nikhilchopra788:homVKH6tCrJ5@ep-sparkling-dawn-a1iplsg1.ap-southeast-1.aws.neon.tech/jobfinder?sslmode=require"
@@ -168,7 +168,7 @@ async function deleteData(id) {
     
     try {
         await client.connect();
-        const query = 'DELETE FROM AT WHERE id = $1';
+        const query = 'DELETE FROM JB_JOBS WHERE id = $1';
         const value = [id]
         const result = await client.query(query, value);
         console.log("Rows affected:", result.rowCount);
@@ -186,9 +186,11 @@ async function updateData(id, company_name, website, job_title, work_loc, commit
     });
     
     try {
+        console.log("1")
         await client.connect();
+        console.log("2")
         const query = `
-            UPDATE AT 
+            UPDATE JB_JOBS 
             SET company_name = $1, 
                 website = $2, 
                 job_title = $3, 
@@ -197,9 +199,10 @@ async function updateData(id, company_name, website, job_title, work_loc, commit
                 remote = $6, 
                 job_link = $7, 
                 description = $8 
-            WHERE id = $8`;
+            WHERE id = $9`;
         const values = [company_name, website, job_title, work_loc, commitment, remote, job_link, description, id];
         const result = await client.query(query, values);
+        console.log("3")
         console.log("Rows affected:", result.rowCount);
         return result
     } catch (error) {
