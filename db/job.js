@@ -1,5 +1,7 @@
 const { Client } = require("pg");
 const aws = require('aws-sdk');
+require('dotenv').config();
+
 /*
 async function createUsersTable() {
     const client = new Client({
@@ -174,9 +176,9 @@ async function updateData(id, company_name, website, job_title, work_loc, commit
 }
 
 const s3 = new aws.S3({
-  accessKeyId: 'AKIAUOCB6YFULUAGXDRE',
-  secretAccessKey: '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',
-  region: 'us-east-1'
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_REGION
 });
 
 async function uploadImageToS3(imageData) {
