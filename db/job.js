@@ -197,7 +197,7 @@ async function uploadImageToS3(imageData) {
 }
 
 // Function to insert S3 URL into PostgreSQL
-async function insertImageURLIntoDB(s3Url) {
+/*async function insertImageURLIntoDB(s3Url) {
   const client = new Client({
     connectionString: "postgresql://nikhilchopra788:homVKH6tCrJ5@ep-sparkling-dawn-a1iplsg1.ap-southeast-1.aws.neon.tech/jobfinder?sslmode=require"
   });
@@ -215,11 +215,11 @@ async function insertImageURLIntoDB(s3Url) {
     await client.end();
   }
 }
-
+*/
 async function insertData(company_name, website, job_title, work_loc, commitment, remote, job_link, description, name, email, imageData) {
   try {
     const s3Url = await uploadImageToS3(imageData);
-    await insertImageURLIntoDB(s3Url);
+   // const imgURL = await insertImageURLIntoDB(s3Url);
     
     const client = new Client({
         connectionString: "postgresql://nikhilchopra788:homVKH6tCrJ5@ep-sparkling-dawn-a1iplsg1.ap-southeast-1.aws.neon.tech/jobfinder?sslmode=require"
@@ -245,8 +245,8 @@ async function insertData(company_name, website, job_title, work_loc, commitment
     }
 
     // Insert job using the user_id
-    const insertJobQuery = 'INSERT INTO JB_JOBS (user_id, company_name, website, job_title, work_loc, commitment, remote, job_link, description) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)';
-    const insertJobValues = [userId, company_name, website, job_title, work_loc, commitment, remote, job_link, description];
+    const insertJobQuery = 'INSERT INTO JB_JOBS (user_id, company_name, website, logo_url, job_title, work_loc, commitment, remote, job_link, description) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)';
+    const insertJobValues = [userId, company_name, website, s3Url, job_title, work_loc, commitment, remote, job_link, description];
     const { rows: insertedJob } = await client.query(insertJobQuery, insertJobValues);
 
     console.log("Job inserted:");
