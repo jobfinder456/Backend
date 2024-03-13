@@ -8,8 +8,9 @@ const {Client} = require("pg");
     const result = await client.query(`
         CREATE TABLE JB_USERS (
            id SERIAL PRIMARY KEY,
-           name VARCHAR(35) NOT NULL,
-           email VARCHAR(60) NOT NULL
+           name VARCHAR(60) NOT NULL,
+           email VARCHAR(60) NOT NULL UNIQUE,
+           password VARCHAR(10) NOT NULL
         );
     `)
     console.log(result)
@@ -40,6 +41,7 @@ async function createjobsTable() {
     console.log(result)
     await client.end();
 } */
+
 
 async function getuserjobData(email) {
     const client = new Client({
@@ -219,4 +221,4 @@ module.exports = {
     updateData,
     getJobData,
     getuserjobData
-};
+}; 
