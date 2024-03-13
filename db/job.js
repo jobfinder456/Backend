@@ -28,6 +28,7 @@ async function createjobsTable() {
         user_id INTEGER REFERENCES JB_USERS(id),
         company_name VARCHAR(30) NOT NULL,
         website VARCHAR(35) NOT NULL,
+        logo_url VARCHAR(100) NOT NULL,
         job_title VARCHAR(30) NOT NULL,
         work_loc VARCHAR(80) NOT NULL,
         commitment VARCHAR(20) NOT NULL,
@@ -120,49 +121,92 @@ async function getJobData(id) {
     }
 }
 
-async function insertData(company_name, website, job_title, work_loc, commitment, remote, job_link, description, name, email) {
-    const client = new Client({
-        connectionString: "postgresql://nikhilchopra788:homVKH6tCrJ5@ep-sparkling-dawn-a1iplsg1.ap-southeast-1.aws.neon.tech/jobfinder?sslmode=require"
-    });
-
+const s3 = new aws.S3({
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    region: process.env.AWS_REGION
+  });
+  
+  async function uploadImageToS3(imageData) {
+    const params = {
+      Bucket: 'jobfinderimage',
+      Key: `images/${Date.now()}_${Math.floor(Math.random() * 1000)}.png`,
+      Body: imageData,
+      ContentType: 'image/png'
+    };
+  
     try {
-        await client.connect();
-
-        // Check if the user already exists
-        const checkUserQuery = 'SELECT id FROM JB_USERS WHERE email = $1';
-        const checkUserValues = [email];
-        const { rows: existingUsers } = await client.query(checkUserQuery, checkUserValues);
-
-        let userId;
-
-        // If user doesn't exist, insert the user
-        if (existingUsers.length === 0) {
-            const insertUserQuery = 'INSERT INTO JB_USERS (name, email) VALUES ($1, $2) RETURNING id';
-            const insertUserValues = [name, email];
-            const { rows: insertedUser } = await client.query(insertUserQuery, insertUserValues);
-            userId = insertedUser[0].id;
-            console.log("New user inserted:", insertedUser);
-        } else {
-            userId = existingUsers[0].id;
-        }
-
-        // Insert job using the user_id
-        const insertJobQuery = 'INSERT INTO JB_JOBS (user_id, company_name, website, job_title, work_loc, commitment, remote, job_link, description) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)';
-        const insertJobValues = [userId, company_name, website, job_title, work_loc, commitment, remote, job_link, description];
-        const { rows: insertedJob } = await client.query(insertJobQuery, insertJobValues);
-
-        console.log("Job inserted:");
-
-        return insertedJob;
-
+      const { Location } = await s3.upload(params).promise();
+      return Location; // Return S3 URL
+    } catch (error) {
+      console.error('Error uploading image to S3:', error);
+      throw error;
+    }
+  }
+  
+  // Function to insert S3 URL into PostgreSQL
+  /*async function insertImageURLIntoDB(s3Url) {
+    const client = new Client({
+      connectionString: "postgresql://nikhilchopra788:homVKH6tCrJ5@ep-sparkling-dawn-a1iplsg1.ap-southeast-1.aws.neon.tech/jobfinder?sslmode=require"
+    });
+  
+    try {
+      await client.connect();
+      const query = 'INSERT INTO JB_JOBS (logo_url) VALUES ($1) RETURNING id';
+      const values = [s3Url];
+      const result = await client.query(query, values);
+      return result.rows[0].id; // Return inserted row id
+    } catch (error) {
+      console.error('Error inserting URL into database:', error);
+      throw error;
+    } finally {
+      await client.end();
+    }
+  }
+  */
+  async function insertData(company_name, website, job_title, work_loc, commitment, remote, job_link, description, name, email, imageData) {
+    try {
+      const s3Url = await uploadImageToS3(imageData);
+     // const imgURL = await insertImageURLIntoDB(s3Url);
+      
+      const client = new Client({
+          connectionString: "postgresql://nikhilchopra788:homVKH6tCrJ5@ep-sparkling-dawn-a1iplsg1.ap-southeast-1.aws.neon.tech/jobfinder?sslmode=require"
+      });
+      await client.connect();
+  
+      // Check if the user already exists
+      const checkUserQuery = 'SELECT id FROM JB_USERS WHERE email = $1';
+      const checkUserValues = [email];
+      const { rows: existingUsers } = await client.query(checkUserQuery, checkUserValues);
+  
+      let userId;
+  
+      // If user doesn't exist, insert the user
+      if (existingUsers.length === 0) {
+          const insertUserQuery = 'INSERT INTO JB_USERS (name, email) VALUES ($1, $2) RETURNING id';
+          const insertUserValues = [name, email];
+          const { rows: insertedUser } = await client.query(insertUserQuery, insertUserValues);
+          userId = insertedUser[0].id;
+          console.log("New user inserted:", insertedUser);
+      } else {
+          userId = existingUsers[0].id;
+      }
+  
+      // Insert job using the user_id
+      const insertJobQuery = 'INSERT INTO JB_JOBS (user_id, company_name, website, logo_url, job_title, work_loc, commitment, remote, job_link, description) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)';
+      const insertJobValues = [userId, company_name, website, s3Url, job_title, work_loc, commitment, remote, job_link, description];
+      const { rows: insertedJob } = await client.query(insertJobQuery, insertJobValues);
+  
+      console.log("Job inserted:");
+      await client.end();
+  
+      return insertedJob;
+  
     } catch (error) {
         console.error("Error executing query:", error);
-    } finally {
-        await client.end();
     }
-}
-
-
+  }
+  
 async function deleteData(id) {
     const client = new Client({
         connectionString: "postgresql://nikhilchopra788:homVKH6tCrJ5@ep-sparkling-dawn-a1iplsg1.ap-southeast-1.aws.neon.tech/jobfinder?sslmode=require"

@@ -5,7 +5,7 @@ const router = express.Router();
 
 // Middleware to parse JSON request bodies
 router.use(express.json());
-
+/*
 const postSchema = zod.object({
     company_name: zod.string().min(1),
     website: zod.string().min(5),
@@ -15,7 +15,7 @@ const postSchema = zod.object({
     job_link: zod.string().min(3),
     description: zod.string().min(50),
 })
-
+*/
 router.post("/users-list", async(req,res)=>{
     const {email} = req.body
     const all = await getuserjobData(email)
@@ -41,7 +41,7 @@ router.get("/job/:id", async(req, res) => {
 router.post("/insert", async (req, res) => {
     // Ensure req.body is properly parsed before accessing its properties
 
-    const { company_name, website, job_title, work_loc, commitment, remote, job_link, description, name, email } = req.body;
+    const { company_name, website, image, job_title, work_loc, commitment, remote, job_link, description, name, email } = req.body;
 
     try {
 
@@ -50,7 +50,7 @@ router.post("/insert", async (req, res) => {
             return res.status(411).json({message: "Invalid inputs"})
         }
         */
-        const result = await insertData(company_name, website, job_title, work_loc, commitment, remote, job_link, description, name, email);
+        const result = await insertData(company_name, website, job_title, work_loc, commitment, remote, job_link, description, name, email, image);
         res.status(201).json({ message: "Data inserted successfully", result });
 
     } catch (error) {
