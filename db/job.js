@@ -1,4 +1,6 @@
 const {Client} = require("pg");
+const aws = require('aws-sdk')
+require('dotenv').config();
 
 /*async function createUsersTable() {
     const client = new Client({
