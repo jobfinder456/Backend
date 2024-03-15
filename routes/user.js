@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const express = require("express");
 require('dotenv').config();
 const { getUserLogin, getUserSignUp } = require('../db/user');
+const {authMiddleware} = require('../middleware')
 const router = express.Router();
 
 router.use(express.json());
@@ -43,16 +44,25 @@ router.post('/user/signup', async (req, res) => {
 });
 
 router.get('/verifyuser', async (req, res) => {
-    const authHeader = req.headers.authorization
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).json({
+            message: "No token provided"
+        });
+    }
+
     const token = authHeader.split(' ')[1];
-    console.log(token)
+    console.log(token);
 
     try {
         const verify = jwt.verify(token, process.env.TOKEN_SECRET);
+        console.log(verify.email);
         res.status(200).json({
-            message: "Valid token"
+            message: "Valid token",
+            email: verify.email
         });
     } catch (error) {
+        console.error("Error verifying token:", error);
         res.status(401).json({
             message: "Invalid token"
         });
