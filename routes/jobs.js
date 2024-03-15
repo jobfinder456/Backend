@@ -3,7 +3,7 @@ const { getData, insertData, updateData, deleteData, getJobData, getuserjobData 
 const zod = require("zod")
 const {authMiddleware} = require('../middleware')
 const router = express.Router();
-const uuid = require("uuid")
+const { v4: uuid } = require("uuid");
 require('dotenv').config();
 const stripe = require('stripe')(process.env.STRIPE_SECRET);
 
@@ -31,27 +31,40 @@ router.get("/list", async (req, res) => {
     res.json({ all });
 });
 //stripe code
-router.get("/payment", async ( req, res )=> {
-    const { token, product } = req.body
-    const idempotencyKey = uuid()
-   return stripe.customers
-  .create({
-    email: token.email,
-  })
-  .then((customer) => {
-    stripe.charges.create({
-        customer: customer.id, // set the customer id
-        amount: product.price * 100, // 
-        currency: 'usd',
-        description: 'job fee',
-        receipt_email: token.email,
-    }), {idempotencyKey}
-      .catch((err) => {
-        // Deal with an error
-        console.log(err)
-      });
-  });
-})
+router.post("/payment", async (req, res) => {
+    console.log("1");
+
+    const { token, product } = req.body;
+    const idempotencyKey = uuid();
+    
+    try {
+        const customer = await stripe.customers.create({
+            email: token.email,
+        });
+
+        console.log(token.email , customer.id, product.price, idempotencyKey)
+
+        console.log("2");
+        
+        const charge = await stripe.charges.create({
+            customer: customer.id,
+            amount: product.price * 100,
+            currency: 'usd',
+            description: 'job fee',
+            receipt_email: token.email,
+        }, {
+            idempotencyKey: idempotencyKey,
+        });
+
+        console.log("Payment successful:", charge);
+        res.status(200).json({ message: "Payment successful", charge });
+    } catch (err) {
+        console.log("4");
+        console.error(err);
+        res.status(500).json({ error: "An error occurred while processing the payment" });
+    }
+});
+
 
 router.get("/job/:id", async(req, res) => {
     const { id } = req.params;
