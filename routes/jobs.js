@@ -3,6 +3,9 @@ const { getData, insertData, updateData, deleteData, getJobData, getuserjobData 
 const zod = require("zod")
 const {authMiddleware} = require('../middleware')
 const router = express.Router();
+const uuid = require("uuid")
+require('dotenv').config();
+const stripe = require('stripe')(process.env.STRIPE_SECRET);
 
 // Middleware to parse JSON request bodies
 router.use(express.json());
@@ -27,6 +30,28 @@ router.get("/list", async (req, res) => {
     const all = await getData();
     res.json({ all });
 });
+//stripe code
+router.get("/payment", async ( req, res )=> {
+    const { token, product } = req.body
+    const idempotencyKey = uuid()
+   return stripe.customers
+  .create({
+    email: token.email,
+  })
+  .then((customer) => {
+    stripe.charges.create({
+        customer: customer.id, // set the customer id
+        amount: product.price * 100, // 
+        currency: 'usd',
+        description: 'job fee',
+        receipt_email: token.email,
+    }), {idempotencyKey}
+      .catch((err) => {
+        // Deal with an error
+        console.log(err)
+      });
+  });
+})
 
 router.get("/job/:id", async(req, res) => {
     const { id } = req.params;
