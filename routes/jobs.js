@@ -1,6 +1,7 @@
 const express = require("express");
 const { getData, insertData, updateData, deleteData, getJobData, getuserjobData } = require('../db/job');
 const zod = require("zod")
+const {authMiddleware} = require('../middleware')
 const router = express.Router();
 
 // Middleware to parse JSON request bodies
@@ -16,7 +17,7 @@ const postSchema = zod.object({
     description: zod.string().min(50),
 })
 */
-router.post("/users-list", async(req,res)=>{
+router.post("/users-list", authMiddleware, async(req,res)=>{
     const {email} = req.body
     const all = await getuserjobData(email)
     res.json({ all })
@@ -59,7 +60,7 @@ router.post("/insert", async (req, res) => {
     }
 });
 
-router.put("/update/:id", async(req,res) => {
+router.put("/update/:id", authMiddleware, async(req,res) => {
 
     const { id } = req.params
     const { company_name, website, job_title, work_loc, commitment, remote, job_link, description } = req.body;
@@ -75,7 +76,7 @@ router.put("/update/:id", async(req,res) => {
     }
 })
 
-router.delete("/delete/:id", async(req,res)=>{
+router.delete("/delete/:id", authMiddleware, async(req,res)=>{
   const { id }= req.params 
   try {
     const result = await deleteData(id);
