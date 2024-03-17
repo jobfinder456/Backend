@@ -31,7 +31,7 @@ router.get("/list", async (req, res) => {
     res.json({ all });
 });
 //stripe code
-router.post("/payment", async (req, res) => {
+/*router.post("/payment", async (req, res) => {
     console.log("1");
 
     const { token, product } = req.body;
@@ -40,6 +40,7 @@ router.post("/payment", async (req, res) => {
     try {
         const customer = await stripe.customers.create({
             email: token.email,
+            source: 'tok_mastercard',
         });
 
         console.log(token.email , customer.id, product.price, idempotencyKey)
@@ -63,7 +64,47 @@ router.post("/payment", async (req, res) => {
         console.error(err);
         res.status(500).json({ error: "An error occurred while processing the payment" });
     }
-});
+});*/
+
+router.post('/create-checkout-session', async (req, res) => {
+    const {products} = req.body
+    console.log(products)
+
+    const lineItems = products.map((product) => ({
+        price_data: {
+            currency: "usd",
+            product_data: {
+                name: product.id
+            },
+            unit_amount: product.price * 100,
+        },
+        quantity: 1, 
+        
+    }));
+
+    console.log(lineItems)
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      line_items: lineItems,
+      mode: 'payment',
+      success_url: "http://localhost:5173/success",
+      cancel_url: "http://localhost:5173/cancel",
+    });
+
+    res.json({id: session.id})
+  
+  });
+  
+  
+  router.get('/session-status', async (req, res) => {
+    const session = await stripe.checkout.sessions.retrieve(req.query.session_id);
+  
+    res.send({
+      status: session.status,
+      customer_email: session.customer_details.email
+    });
+  });
 
 
 router.get("/job/:id", async(req, res) => {
