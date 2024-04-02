@@ -1,5 +1,6 @@
 const {Client} = require("pg");
-const aws = require('aws-sdk')
+const aws = require('@aws-sdk/client-s3')
+const { S3, PutObjectCommand } = require('@aws-sdk/client-s3');
 require('dotenv').config();
 
 /*async function createUsersTable() {
@@ -123,28 +124,31 @@ async function getJobData(id) {
     }
 }
 
-const s3 = new aws.S3({
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+const s3 = new S3({
+    credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+    },
     region: process.env.AWS_REGION
-  });
+});
   
-  async function uploadImageToS3(imageData) {
+async function uploadImageToS3(imageData) {
     const params = {
-      Bucket: 'jobfinderimage',
-      Key: `images/${Date.now()}_${Math.floor(Math.random() * 1000)}.png`,
-      Body: imageData,
-      ContentType: 'image/png'
+        Bucket: 'jobfinderimage',
+        Key: `images/${Date.now()}_${Math.floor(Math.random() * 1000)}.png`,
+        Body: imageData,
+        ContentType: 'image/png'
     };
-  
+
     try {
-      const { Location } = await s3.upload(params).promise();
-      return Location; // Return S3 URL
+        const command = new PutObjectCommand(params);
+        const response = await s3.send(command);
+        return response; // Return response if successful
     } catch (error) {
-      console.error('Error uploading image to S3:', error);
-      throw error;
+        console.error('Error uploading image to S3:', error);
+        throw error;
     }
-  }
+}
   
   // Function to insert S3 URL into PostgreSQL
   /*async function insertImageURLIntoDB(s3Url) {
@@ -168,7 +172,7 @@ const s3 = new aws.S3({
   */
   async function insertData(company_name, website, job_title, work_loc, commitment, remote, job_link, description, name, email, imageData) {
     try {
-      const s3Url = await uploadImageToS3(imageData);
+      const s3Url = await uploadImageToS3(imageData.path);
      // const imgURL = await insertImageURLIntoDB(s3Url);
       
       const client = new Client({
