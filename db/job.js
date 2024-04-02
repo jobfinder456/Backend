@@ -168,7 +168,7 @@ const s3 = new aws.S3({
   */
   async function insertData(company_name, website, job_title, work_loc, commitment, remote, job_link, description, name, email, imageData) {
     try {
-      const s3Url = await uploadImageToS3(imageData);
+      const s3Url = await uploadImageToS3(imageData.path);
      // const imgURL = await insertImageURLIntoDB(s3Url);
       
       const client = new Client({

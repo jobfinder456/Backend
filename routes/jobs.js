@@ -6,8 +6,10 @@ const router = express.Router();
 const { v4: uuid } = require("uuid");
 require('dotenv').config();
 const stripe = require('stripe')(process.env.STRIPE_SECRET);
+const multer = require("multer");
 
 // Middleware to parse JSON request bodies
+const upload = multer({ dest: 'uploads/' });
 router.use(express.json());
 /*
 const postSchema = zod.object({
@@ -20,6 +22,7 @@ const postSchema = zod.object({
     description: zod.string().min(50),
 })
 */
+
 router.post("/users-list", authMiddleware, async(req,res)=>{
     const {email} = req.body
     const all = await getuserjobData(email)
@@ -118,10 +121,15 @@ router.get("/job/:id", async(req, res) => {
     }
 })
 
-router.post("/insert", async (req, res) => {
+router.post("/insert",upload.single('image'), async (req, res) => {
     // Ensure req.body is properly parsed before accessing its properties
 
-    const { company_name, website, image, job_title, work_loc, commitment, remote, job_link, description, name, email } = req.body;
+    const { company_name, website, job_title, work_loc, commitment, remote, job_link, description, name, email } = req.body;
+    const image = req.file;
+
+    console.log(req.body)
+    console.log(req.file)
+
 
     try {
 
@@ -131,6 +139,7 @@ router.post("/insert", async (req, res) => {
         }
         */
         const result = await insertData(company_name, website, job_title, work_loc, commitment, remote, job_link, description, name, email, image);
+
         res.status(201).json({ message: "Data inserted successfully", result });
 
     } catch (error) {
