@@ -6,10 +6,14 @@ const router = express.Router();
 const { v4: uuid } = require("uuid");
 require('dotenv').config();
 const stripe = require('stripe')(process.env.STRIPE_SECRET);
+const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+require('dotenv').config();
 const multer = require("multer");
+const sharp = require("sharp");
 
-// Middleware to parse JSON request bodies
-const upload = multer({ dest: 'uploads/' });
+const storage = multer.memoryStorage()
+const upload = multer({ storage: storage })
+
 router.use(express.json());
 /*
 const postSchema = zod.object({
@@ -121,25 +125,30 @@ router.get("/job/:id", async(req, res) => {
     }
 })
 
-router.post("/insert",upload.single('image'), async (req, res) => {
+const s3Client = new S3Client({
+    credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    },
+    region: process.env.AWS_REGION
+  });
+router.post("/insert", upload.single('image'),async (req, res) => {
     // Ensure req.body is properly parsed before accessing its properties
 
     const { company_name, website, job_title, work_loc, commitment, remote, job_link, description, name, email } = req.body;
-    const image = req.file;
-
-    console.log(req.body)
-    console.log(req.file)
-
-
+    const image = req.file
+    const imageBuffer = await sharp(image.buffer)
+    .resize({ height: 1920, width: 1080, fit: "contain" })
+    .toBuffer()
     try {
-
-        /*const {success} = postSchema.safeParse(req.body)
-        if(!success) {
-            return res.status(411).json({message: "Invalid inputs"})
-        }
-        */
-        const result = await insertData(company_name, website, job_title, work_loc, commitment, remote, job_link, description, name, email, image);
-
+        const params = {
+            Bucket: 'jobfinderimage',
+            Key: `images/${Date.now()}_${Math.floor(Math.random() * 1000)}.png`,
+            Body: imageBuffer,
+            ContentType: image.mimetype
+          };
+          await s3Client.send(new PutObjectCommand(params));
+        const result = await insertData(company_name, website, job_title, work_loc, commitment, remote, job_link, description, name, email);
         res.status(201).json({ message: "Data inserted successfully", result });
 
     } catch (error) {

@@ -1,6 +1,6 @@
 const {Client} = require("pg");
-const aws = require('@aws-sdk/client-s3')
-const { S3, PutObjectCommand } = require('@aws-sdk/client-s3');
+//const aws = require('@aws-sdk/client-s3')
+//const { S3, PutObjectCommand } = require('@aws-sdk/client-s3');
 require('dotenv').config();
 
 /*async function createUsersTable() {
@@ -124,7 +124,7 @@ async function getJobData(id) {
     }
 }
 
-const s3 = new S3({
+/*const s3 = new S3({
     credentials: {
         accessKeyId: process.env.AWS_ACCESS_KEY_ID,
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
@@ -170,9 +170,9 @@ async function uploadImageToS3(imageData) {
     }
   }
   */
-  async function insertData(company_name, website, job_title, work_loc, commitment, remote, job_link, description, name, email, imageData) {
+  async function insertData(company_name, website, job_title, work_loc, commitment, remote, job_link, description, name, email) {
     try {
-      const s3Url = await uploadImageToS3(imageData.path);
+  //    const s3Url = await uploadImageToS3(imageData.path);
      // const imgURL = await insertImageURLIntoDB(s3Url);
       
       const client = new Client({
@@ -197,10 +197,10 @@ async function uploadImageToS3(imageData) {
       } else {
           userId = existingUsers[0].id;
       }
-  
+      const testing="yoyo"
       // Insert job using the user_id
       const insertJobQuery = 'INSERT INTO JB_JOBS (user_id, company_name, website, logo_url, job_title, work_loc, commitment, remote, job_link, description) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)';
-      const insertJobValues = [userId, company_name, website, s3Url, job_title, work_loc, commitment, remote, job_link, description];
+      const insertJobValues = [userId, company_name, website, testing,job_title, work_loc, commitment, remote, job_link, description];
       const { rows: insertedJob } = await client.query(insertJobQuery, insertJobValues);
   
       console.log("Job inserted:");
