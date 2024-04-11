@@ -132,7 +132,7 @@ const s3Client = new S3Client({
     },
     region: process.env.AWS_REGION
   });
-router.post("/insert", upload.single('image'),async (req, res) => {
+router.post("/insert",  upload.single('image'),async (req, res) => {
     // Ensure req.body is properly parsed before accessing its properties
 
     const { company_name, website, job_title, work_loc, commitment, remote, job_link, description, name, email } = req.body;
@@ -140,15 +140,17 @@ router.post("/insert", upload.single('image'),async (req, res) => {
     const imageBuffer = await sharp(image.buffer)
     .resize({ height: 1920, width: 1080, fit: "contain" })
     .toBuffer()
+    const imageName = `${company_name}`
     try {
         const params = {
             Bucket: 'jobfinderimage',
-            Key: `images/${Date.now()}_${Math.floor(Math.random() * 1000)}.png`,
+            Key: `images/${imageName}.png`,
             Body: imageBuffer,
             ContentType: image.mimetype
           };
           await s3Client.send(new PutObjectCommand(params));
-        const result = await insertData(company_name, website, job_title, work_loc, commitment, remote, job_link, description, name, email);
+          const imageUrl = `https://${params.Bucket}.s3.amazonaws.com/${params.Key}`;
+        const result = await insertData(company_name, website, imageUrl, job_title, work_loc, commitment, remote, job_link, description, name, email);
         res.status(201).json({ message: "Data inserted successfully", result });
 
     } catch (error) {

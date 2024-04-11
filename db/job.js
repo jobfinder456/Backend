@@ -170,7 +170,7 @@ async function uploadImageToS3(imageData) {
     }
   }
   */
-  async function insertData(company_name, website, job_title, work_loc, commitment, remote, job_link, description, name, email) {
+  async function insertData(company_name, website, logo_url, job_title, work_loc, commitment, remote, job_link, description, name, email) {
     try {
   //    const s3Url = await uploadImageToS3(imageData.path);
      // const imgURL = await insertImageURLIntoDB(s3Url);
@@ -197,10 +197,9 @@ async function uploadImageToS3(imageData) {
       } else {
           userId = existingUsers[0].id;
       }
-      const testing="yoyo"
       // Insert job using the user_id
       const insertJobQuery = 'INSERT INTO JB_JOBS (user_id, company_name, website, logo_url, job_title, work_loc, commitment, remote, job_link, description) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)';
-      const insertJobValues = [userId, company_name, website, testing,job_title, work_loc, commitment, remote, job_link, description];
+      const insertJobValues = [userId, company_name, website, logo_url, job_title, work_loc, commitment, remote, job_link, description];
       const { rows: insertedJob } = await client.query(insertJobQuery, insertJobValues);
   
       console.log("Job inserted:");
