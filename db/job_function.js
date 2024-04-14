@@ -39,9 +39,20 @@ async function getuserjobData(email) {
     }
 }
 
-async function getData(offset, limit) {
+async function getData(offset, limit, searchTerm, location) {
     try {
-        const query = `SELECT * FROM JB_JOBS OFFSET $1 LIMIT $2`;
+        let query = `SELECT * FROM JB_JOBS`;
+
+        if (searchTerm && location) {
+            query += ` WHERE (job_title ILIKE '%${searchTerm}%' OR description ILIKE '%${searchTerm}%') AND work_loc ILIKE '%${location}%'`;
+        } else if (searchTerm) {
+            query += ` WHERE job_title ILIKE '%${searchTerm}%' OR description ILIKE '%${searchTerm}%'`;
+        } else if (location) {
+            query += ` WHERE work_loc ILIKE '%${location}%'`;
+        }
+
+        query += ` OFFSET $1 LIMIT $2`;
+        
         const result = await executeQuery(query, [offset, limit]);
         console.log("Rows affected", result);
         return result;

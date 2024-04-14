@@ -38,16 +38,19 @@ router.post("/users-list", authMiddleware, async (req, res) => {
 router.get("/list", async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 3;
+        const limit = parseInt(req.query.limit) || 10;
+        const searchTerm = req.query.search || ''; // Added
+        const location = req.query.loc || ''; // Added
 
         const offset = (page - 1) * limit;
         
-        const all = await getData(offset, limit);
+        const all = await getData(offset, limit, searchTerm, location); // Updated
         res.json({ all });
     } catch (error) {
         handleError(res, error);
     }
 });
+
 
 router.post('/create-checkout-session', async (req, res) => {
     try {
