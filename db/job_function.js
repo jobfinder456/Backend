@@ -44,9 +44,9 @@ async function getData(offset, limit, searchTerm, location) {
         let query = `SELECT * FROM JB_JOBS`;
 
         if (searchTerm && location) {
-            query += ` WHERE (job_title ILIKE '%${searchTerm}%' OR description ILIKE '%${searchTerm}%') AND work_loc ILIKE '%${location}%'`;
+            query += ` WHERE (job_title ILIKE '%${searchTerm}%') AND work_loc ILIKE '%${location}%'`;
         } else if (searchTerm) {
-            query += ` WHERE job_title ILIKE '%${searchTerm}%' OR description ILIKE '%${searchTerm}%'`;
+            query += ` WHERE job_title ILIKE '%${searchTerm}%'`;
         } else if (location) {
             query += ` WHERE work_loc ILIKE '%${location}%'`;
         }
