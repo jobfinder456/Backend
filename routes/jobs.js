@@ -7,6 +7,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET);
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const multer = require("multer");
 const sharp = require("sharp");
+const { sendEmail } = require("../db/email-function")
 
 require('dotenv').config();
 
@@ -15,7 +16,9 @@ const upload = multer({ storage: storage });
 
 router.use(express.json());
 
-router.post("/insert-email", async(req, res) =>{
+router.post("/sendEmail", sendEmail);
+
+router.post("/insert-user-email", async(req, res) =>{
     try {
         const email = req.body;
         const result = await insertmail(email)
