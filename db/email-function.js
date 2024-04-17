@@ -23,7 +23,7 @@ const sendEmail = expressAsyncHandler(async (req, res) => {
   var mailOptions = {
     from: process.env.SMTP_MAIL,
     to: email,
-    subject: "OTP form Callback Coding",
+    subject: "OTP from getjobs.today",
     text: `Your OTP is: ${otp}`,
   };
 
