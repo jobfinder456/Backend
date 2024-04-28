@@ -1,8 +1,8 @@
 const expressAsyncHandler = require("express-async-handler");
 const dotenv = require("dotenv");
 const nodemailer = require("nodemailer");
+const otpGenerator = require("otp-generator");
 dotenv.config();
-const generateOTP = require("./genotp");
 
 let transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -14,9 +14,21 @@ let transporter = nodemailer.createTransport({
   },
 });
 
+ let checker 
+
+const generateOTP = () => {
+  const OTP = otpGenerator.generate(6, {
+    lowerCaseAlphabets: false,
+    upperCaseAlphabets: false,
+    specialChars: false,
+  });
+  checker = OTP
+
+  return OTP;
+};
+
 const sendEmail = expressAsyncHandler(async (req, res) => {
-  const { email} = req.body;
-  console.log(email);
+  const { email } = req.body;
   
   const otp = generateOTP();
 
@@ -34,6 +46,23 @@ const sendEmail = expressAsyncHandler(async (req, res) => {
       console.log("Email sent successfully!");
     }
   });
+
+  return otp;
 });
 
-module.exports = { sendEmail };
+const verifyOTP = expressAsyncHandler(async (req, res) => {
+  try {
+    const { otp } = req.body;
+    if (otp == checker) {
+      res.status(200).json({ message: "User OTP is correct"});
+    } else {
+      res.status(400).json({ message: "User OTP is incorrect"});
+    }
+  } catch (error) {
+    console.error("Error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
+module.exports = { sendEmail, verifyOTP };
