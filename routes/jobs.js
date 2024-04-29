@@ -22,7 +22,7 @@ router.post("/sendEmail", sendEmail);
 
 router.post("/insert-user-email", async(req, res) =>{
     try {
-        const email = req.body;
+        const {email} = req.body;
         const result = await insertMail(email)
         res.status(201).json({"email saved": result})
     } catch (error) {
