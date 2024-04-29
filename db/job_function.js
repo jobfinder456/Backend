@@ -16,6 +16,19 @@ async function executeQuery(query, values = []) {
     }
 }
 
+async function insertMail(email) {
+    const client = await pool.connect();
+    try {
+        const query = 'INSERT INTO USER_MAIL (email) VALUES ($1) RETURNING *';
+        const values = [email];
+        const result = await client.query(query, values);
+        return result.rows[0]; // Assuming you want to return the inserted row
+    } finally {
+        client.release();
+    }
+}
+
+
 async function getuserjobData(email) {
     try {
         const query = 'SELECT id FROM JB_USERS WHERE email = $1';
@@ -146,5 +159,6 @@ module.exports = {
     deleteData,
     updateData,
     getJobData,
-    getuserjobData
+    getuserjobData,
+    insertMail
 };

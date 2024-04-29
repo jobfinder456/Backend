@@ -1,5 +1,5 @@
 const express = require("express");
-const { getData, insertData, updateData, deleteData, getJobData, getuserjobData } = require('../db/job_function');
+const { getData, insertData, updateData, deleteData, getJobData, getuserjobData, insertMail } = require('../db/job_function');
 const { authMiddleware } = require('../middleware');
 const router = express.Router();
 const { v4: uuid } = require("uuid");
@@ -7,7 +7,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET);
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const multer = require("multer");
 const sharp = require("sharp");
-const { sendEmail } = require("../db/email-function")
+const { sendEmail, verifyOTP } = require("../db/email-function")
 
 require('dotenv').config();
 
@@ -16,12 +16,14 @@ const upload = multer({ storage: storage });
 
 router.use(express.json());
 
+router.post("/verify-otpp", verifyOTP)
+
 router.post("/sendEmail", sendEmail);
 
 router.post("/insert-user-email", async(req, res) =>{
     try {
         const email = req.body;
-        const result = await insertmail(email)
+        const result = await insertMail(email)
         res.status(201).json({"email saved": result})
     } catch (error) {
         handleError(res, error);
