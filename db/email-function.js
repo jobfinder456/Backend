@@ -1,8 +1,12 @@
+const express = require("express");
 const expressAsyncHandler = require("express-async-handler");
 const dotenv = require("dotenv");
 const nodemailer = require("nodemailer");
 const otpGenerator = require("otp-generator");
+
 dotenv.config();
+
+const app = express();
 
 let transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -14,7 +18,7 @@ let transporter = nodemailer.createTransport({
   },
 });
 
- let checker 
+let checker;
 
 const generateOTP = () => {
   const OTP = otpGenerator.generate(6, {
@@ -22,14 +26,14 @@ const generateOTP = () => {
     upperCaseAlphabets: false,
     specialChars: false,
   });
-  checker = OTP
+  checker = OTP;
 
   return OTP;
 };
 
 const sendEmail = expressAsyncHandler(async (req, res) => {
   const { email } = req.body;
-  
+
   const otp = generateOTP();
 
   var mailOptions = {
@@ -42,10 +46,15 @@ const sendEmail = expressAsyncHandler(async (req, res) => {
   transporter.sendMail(mailOptions, function (error, info) {
     if (error) {
       console.log(error);
+      res.status(500).send("Error sending email");
     } else {
       console.log("Email sent successfully!");
+      res.status(200).send("Email sent successfully!");
+      console.log("1");
     }
   });
+
+  console.log("2");
 
   return otp;
 });
