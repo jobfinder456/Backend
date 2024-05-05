@@ -132,7 +132,7 @@ router.post("/insert", upload.single('image'), async (req, res) => {
             imageUrl = 'https://example.com/default-image.png';
         } else {
             const imageBuffer = await sharp(image.buffer)
-                .resize({ height: 1920, width: 1080, fit: "contain" })
+                .resize({ height: 1080, width: 1080, fit: "contain" })
                 .toBuffer();
 
             const imageName = `${company_name}`;
