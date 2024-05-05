@@ -34,6 +34,7 @@ router.post("/users-list", authMiddleware, async (req, res) => {
     try {
         const { email } = req.body;
         const all = await getuserjobData(email);
+        console.log(all)
         res.json({ all });
     } catch (error) {
         handleError(res, error);

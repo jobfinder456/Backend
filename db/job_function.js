@@ -44,8 +44,21 @@ async function getuserjobData(email) {
         const jobQuery = 'SELECT * FROM JB_JOBS WHERE user_id = $1';
         const jobResult = await executeQuery(jobQuery, [userId]);
 
-        console.log("Jobs fetched for user with email", email, ":", jobResult);
-        return jobResult;
+        const notOkJobsQuery = 'SELECT COUNT(*) AS count FROM JB_JOBS WHERE user_id = $1 AND is_ok = false';
+        const notOkJobsResult = await executeQuery(notOkJobsQuery, [userId]);
+        
+        //console.log("Number of jobs with is_ok column as false:", notOkJobsResult[0].count);
+
+        const numOfJobNotLive = notOkJobsResult[0].count
+
+        //console.log("Jobs fetched for user with email", email, ":", jobResult);
+
+        const result = {
+            jobResult: jobResult,
+            is_ok: numOfJobNotLive
+        }
+
+        return result;
     } catch (error) {
         console.error("Error executing query:", error);
         return [];
