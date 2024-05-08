@@ -118,8 +118,8 @@ async function insertData(company_name, website, logo_url, job_title, work_loc, 
             userId = existingUsers[0].id;
         }
 
-        const insertJobQuery = 'INSERT INTO JB_JOBS (user_id, company_name, website, logo_url, job_title, work_loc, commitment, remote, job_link, description) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)';
-        const insertJobValues = [userId, company_name, website, logo_url, job_title, work_loc, commitment, remote, job_link, description];
+        const insertJobQuery = 'INSERT INTO JB_JOBS (user_id, company_name, website, logo_url, job_title, work_loc, commitment, remote, job_link, description, name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)';
+        const insertJobValues = [userId, company_name, website, logo_url, job_title, work_loc, commitment, remote, job_link, name];
         const insertedJob = await executeQuery(insertJobQuery, insertJobValues);
 
         console.log("Job inserted:", insertedJob);
