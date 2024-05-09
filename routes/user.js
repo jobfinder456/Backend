@@ -26,8 +26,8 @@ router.post('/user/login', async (req, res) => {
 });
 
 router.post('/user/signup', async (req, res) => {
-    const {name, email, password } = req.body;
-    const result = await getUserSignUp(name, email, password);
+    const {name, email } = req.body;
+    const result = await getUserSignUp(name, email);
 
     if (!result) {
         return res.status(401).json({

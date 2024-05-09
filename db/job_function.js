@@ -119,7 +119,7 @@ async function insertData(company_name, website, logo_url, job_title, work_loc, 
         }
 
         const insertJobQuery = 'INSERT INTO JB_JOBS (user_id, company_name, website, logo_url, job_title, work_loc, commitment, remote, job_link, description, name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)';
-        const insertJobValues = [userId, company_name, website, logo_url, job_title, work_loc, commitment, remote, job_link, name];
+        const insertJobValues = [userId, company_name, website, logo_url, job_title, work_loc, commitment, remote, job_link, description, name];
         const insertedJob = await executeQuery(insertJobQuery, insertJobValues);
 
         console.log("Job inserted:", insertedJob);
@@ -130,6 +130,7 @@ async function insertData(company_name, website, logo_url, job_title, work_loc, 
         return [];
     }
 }
+
 
 async function deleteData(id) {
     try {
