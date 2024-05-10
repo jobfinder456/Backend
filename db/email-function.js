@@ -3,6 +3,7 @@ const expressAsyncHandler = require("express-async-handler");
 const dotenv = require("dotenv");
 const nodemailer = require("nodemailer");
 const otpGenerator = require("otp-generator");
+const jwt = require('jsonwebtoken');
 
 dotenv.config();
 
@@ -61,9 +62,13 @@ const sendEmail = expressAsyncHandler(async (req, res) => {
 
 const verifyOTP = expressAsyncHandler(async (req, res) => {
   try {
-    const { otp } = req.body;
+    const { email,otp } = req.body;
+    console.log(email,otp )
     if (otp == checker) {
-      res.status(200).json({ message: "User OTP is correct"});
+      const token = jwt.sign({ email }, process.env.TOKEN_SECRET, { expiresIn: "30d" });
+      res.status(200).json({ message: "User OTP is correct", 
+        token: token
+      });
     } else {
       res.status(400).json({ message: "User OTP is incorrect"});
     }
