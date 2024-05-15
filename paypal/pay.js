@@ -2,9 +2,9 @@ const paypal = require('paypal-rest-sdk');
 require('dotenv').config();
 
 paypal.configure({
-  'mode': 'live', // sandbox or live
-  'client_id': process.env.prod_Client_ID,
-  'client_secret': process.env.prod_Secret_Key
+  'mode': process.env.Paypal_Mode, // sandbox or live
+  'client_id': process.env.Client_ID,
+  'client_secret': process.env.Secret_Key
 });
 
 const createPayment = (userId, jobId, price, successUrl, cancelUrl) => {
