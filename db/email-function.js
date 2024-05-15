@@ -4,6 +4,7 @@ const dotenv = require("dotenv");
 const nodemailer = require("nodemailer");
 const otpGenerator = require("otp-generator");
 const jwt = require('jsonwebtoken');
+const {Client} = require('pg');
 
 dotenv.config();
 
@@ -61,22 +62,38 @@ const sendEmail = expressAsyncHandler(async (req, res) => {
 });
 
 const verifyOTP = expressAsyncHandler(async (req, res) => {
-  try {
-    const { email,otp } = req.body;
-    console.log(email,otp )
-    if (otp == checker) {
+  const client = new Client({
+    connectionString: "postgresql://nikhilchopra788:homVKH6tCrJ5@ep-sparkling-dawn-a1iplsg1.ap-southeast-1.aws.neon.tech/jobfinder?sslmode=require"
+});
+try {
+    await client.connect();
+    const { email, otp } = req.body;
+    console.log(email, otp);
+
+    // Assuming `checker` is defined and holds the correct OTP value
+    if (otp === checker) {
+      const query = `SELECT * FROM JB_USERS WHERE email = $1`;
+      const values = [email];
+      const result = await client.query(query, values);
+
+      if (result.rows.length == 0) {
+        console.log("inin")
+        const insertQuery = `INSERT INTO JB_USERS (email) VALUES ($1)`;
+        await client.query(insertQuery, values);
+      }
+
       const token = jwt.sign({ email }, process.env.TOKEN_SECRET, { expiresIn: "30d" });
-      res.status(200).json({ message: "User OTP is correct", 
-        token: token
-      });
+      res.status(200).json({ message: "User OTP is correct", token });
+
     } else {
-      res.status(400).json({ message: "User OTP is incorrect"});
+      res.status(400).json({ message: "User OTP is incorrect" });
     }
   } catch (error) {
     console.error("Error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
 
 
 module.exports = { sendEmail, verifyOTP };

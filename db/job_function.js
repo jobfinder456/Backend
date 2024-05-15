@@ -80,7 +80,7 @@ async function getData(offset, limit, searchTerm, location) {
         query += ` OFFSET $1 LIMIT $2`;
         
         const result = await executeQuery(query, [offset, limit]);
-        console.log("Rows affected", result);
+        //console.log("Rows affected", result.rows);
         return result;
     } catch (error) {
         console.error("Error executing query:", error);
@@ -102,6 +102,7 @@ async function getJobData(id) {
 
 async function insertData(company_name, website, logo_url, job_title, work_loc, commitment, remote, job_link, description, name, email) {
     try {
+        console.log("vdg")
         const checkUserQuery = 'SELECT id FROM JB_USERS WHERE email = $1';
         const checkUserValues = [email];
         const existingUsers = await executeQuery(checkUserQuery, checkUserValues);
