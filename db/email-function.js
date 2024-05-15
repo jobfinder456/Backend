@@ -20,7 +20,7 @@ let transporter = nodemailer.createTransport({
   },
 });
 
-let checker;
+let checker; 
 
 const generateOTP = () => {
   const OTP = otpGenerator.generate(6, {

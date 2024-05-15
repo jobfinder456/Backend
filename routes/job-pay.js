@@ -7,7 +7,7 @@ router.use(express.json());
 // POST route for initiating a PayPal payment for a job
 router.post('/create-payment', async (req, res) => {
   const { userId, jobId, price } = req.body;
-  const successUrl = 'http://example.com/success'; // Modify with your actual success URL
+  const successUrl = 'http://localhost:3001/success'; // Modify with your actual success URL
   const cancelUrl = 'http://example.com/cancel';   // Modify with your actual cancel URL
 
   try {
