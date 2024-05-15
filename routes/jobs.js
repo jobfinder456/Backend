@@ -2,8 +2,6 @@ const express = require("express");
 const { getData, insertData, updateData, deleteData, getJobData, getuserjobData, insertMail } = require('../db/job_function');
 const { authMiddleware } = require('../middleware');
 const router = express.Router();
-const { v4: uuid } = require("uuid");
-const stripe = require('stripe')(process.env.STRIPE_SECRET);
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const multer = require("multer");
 const sharp = require("sharp");
@@ -57,46 +55,6 @@ router.get("/list", async (req, res) => {
     }
 });
 
-
-router.post('/create-checkout-session', async (req, res) => {
-    try {
-        const { products } = req.body;
-        const lineItems = products.map((product) => ({
-            price_data: {
-                currency: "usd",
-                product_data: {
-                    name: product.id
-                },
-                unit_amount: product.price * 100,
-            },
-            quantity: 1,
-        }));
-
-        const session = await stripe.checkout.sessions.create({
-            payment_method_types: ["card"],
-            line_items: lineItems,
-            mode: 'payment',
-            success_url: "http://localhost:5173/success",
-            cancel_url: "http://localhost:5173/cancel",
-        });
-
-        res.json({ id: session.id });
-    } catch (error) {
-        handleError(res, error);
-    }
-});
-
-router.get('/session-status', async (req, res) => {
-    try {
-        const session = await stripe.checkout.sessions.retrieve(req.query.session_id);
-        res.send({
-            status: session.status,
-            customer_email: session.customer_details.email
-        });
-    } catch (error) {
-        handleError(res, error);
-    }
-});
 
 router.get("/job/:id", async (req, res) => {
     try {
