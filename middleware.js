@@ -19,6 +19,7 @@ const authMiddleware = (req, res, next) => {
         req.email = decoded.email;
 
         next();
+        
     } catch (error) {
         return res.status(403).json({ error: error.message || "Internal Server Error" });
     }

@@ -116,10 +116,18 @@ const s3Client = new S3Client({
     region: process.env.AWS_REGION
 });
 
-router.post("/insert", upload.single('image'), async (req, res) => {
+router.post("/insert", authMiddleware, upload.single('image'), async (req, res) => {
     try {
+        // i want middleware decode email here const decEmail = ?
         const { company_name, website, job_title, work_loc, commitment, remote, job_link, description, name, email } = req.body;
         const image = req.file;
+
+        const decEmail = req.email;
+        console.log(email, " --- ", decEmail)
+
+        if(email != decEmail){
+            return res.status(403).json({ message: "Diffrent mail correct your mail"});
+        }
 
         let imageUrl;
 
