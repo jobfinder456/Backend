@@ -47,16 +47,11 @@ const sendEmail = expressAsyncHandler(async (req, res) => {
 
   transporter.sendMail(mailOptions, function (error, info) {
     if (error) {
-      console.log(error);
       res.status(500).send("Error sending email");
     } else {
-      console.log("Email sent successfully!");
       res.status(200).send("Email sent successfully!");
-      console.log("1");
     }
   });
-
-  console.log("2");
 
   return otp;
 });
@@ -68,7 +63,6 @@ const verifyOTP = expressAsyncHandler(async (req, res) => {
 try {
     await client.connect();
     const { email, otp } = req.body;
-    console.log(email, otp);
 
     // Assuming `checker` is defined and holds the correct OTP value
     if (otp === checker) {
@@ -77,7 +71,6 @@ try {
       const result = await client.query(query, values);
 
       if (result.rows.length == 0) {
-        console.log("inin")
         const insertQuery = `INSERT INTO JB_USERS (email) VALUES ($1)`;
         await client.query(insertQuery, values);
       }
@@ -89,7 +82,6 @@ try {
       res.status(400).json({ message: "User OTP is incorrect" });
     }
   } catch (error) {
-    console.error("Error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
