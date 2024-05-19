@@ -1,5 +1,9 @@
 const paypal = require('paypal-rest-sdk');
 require('dotenv').config();
+const uuid = require('uuid');
+
+// Global variable to store check IDs
+let checkIds;
 
 paypal.configure({
   'mode': process.env.Paypal_Mode, // sandbox or live
@@ -8,7 +12,10 @@ paypal.configure({
 });
 
 const createPayment = (userId, jobId, price, successUrl, cancelUrl) => {
-    const successUrlWithJobId = `${successUrl}?jobId=${encodeURIComponent(jobId)}`;
+    const checkId = uuid.v4(); // Generate a new UUID for the check ID
+    checkIds = checkId; // Store the check ID in the global variable
+
+    const successUrlWithJobId = `${successUrl}?jobId=${encodeURIComponent(jobId)}&checkId=${encodeURIComponent(checkId)}`;
     const cancelUrlWithJobId = `${cancelUrl}?jobId=${encodeURIComponent(jobId)}`;
 
   const paymentData = {
@@ -43,10 +50,10 @@ const createPayment = (userId, jobId, price, successUrl, cancelUrl) => {
       if (error) {
         reject(error);
       } else {
-        resolve(payment.links.find(link => link.rel === 'approval_url').href);
+        resolve({ approvalUrl: payment.links.find(link => link.rel === 'approval_url').href, checkId });
       }
     });
   });
 };
 
-module.exports = { createPayment };
+module.exports = { createPayment, checkIds };

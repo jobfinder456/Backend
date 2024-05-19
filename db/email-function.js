@@ -20,15 +20,35 @@ let transporter = nodemailer.createTransport({
   },
 });
 
-let checker; 
 
-const generateOTP = () => {
+const generateOTP = async (email) => {
+  const client = new Client({
+    connectionString: process.env.DATABASE_URL, // Use environment variable for connection string
+  });
+
+  await client.connect();
+
   const OTP = otpGenerator.generate(6, {
     lowerCaseAlphabets: false,
     upperCaseAlphabets: false,
     specialChars: false,
   });
-  checker = OTP;
+
+  const selectQuery = `SELECT * FROM JB_USERS WHERE email = $1`;
+  const selectValues = [email];
+  const selectResult = await client.query(selectQuery, selectValues);
+
+  if (selectResult.rows.length === 0) {
+    const insertQuery = `INSERT INTO JB_USERS (email, otp) VALUES ($1, $2)`;
+    const insertValues = [email, OTP];
+    await client.query(insertQuery, insertValues);
+  } else {
+    const updateQuery = `UPDATE JB_USERS SET otp = $2 WHERE email = $1`;
+    const updateValues = [email, OTP];
+    await client.query(updateQuery, updateValues);
+  }
+
+  await client.end();
 
   return OTP;
 };
@@ -36,64 +56,51 @@ const generateOTP = () => {
 const sendEmail = expressAsyncHandler(async (req, res) => {
   const { email } = req.body;
 
-  const otp = generateOTP();
+  const otp = await generateOTP(email);
 
-  var mailOptions = {
+  const mailOptions = {
     from: process.env.SMTP_MAIL,
     to: email,
     subject: "OTP from getjobs.today",
     text: `Your OTP is: ${otp}`,
   };
 
-  transporter.sendMail(mailOptions, function (error, info) {
+  transporter.sendMail(mailOptions, (error, info) => {
     if (error) {
       console.log(error);
       res.status(500).send("Error sending email");
     } else {
       console.log("Email sent successfully!");
       res.status(200).send("Email sent successfully!");
-      console.log("1");
     }
   });
-
-  console.log("2");
-
-  return otp;
 });
 
 const verifyOTP = expressAsyncHandler(async (req, res) => {
   const client = new Client({
-    connectionString: "postgresql://nikhilchopra788:homVKH6tCrJ5@ep-sparkling-dawn-a1iplsg1.ap-southeast-1.aws.neon.tech/jobfinder?sslmode=require"
-});
-try {
+    connectionString: process.env.DATABASE_URL, // Use environment variable for connection string
+  });
+
+  try {
     await client.connect();
     const { email, otp } = req.body;
-    console.log(email, otp);
 
-    // Assuming `checker` is defined and holds the correct OTP value
-    if (otp === checker) {
-      const query = `SELECT * FROM JB_USERS WHERE email = $1`;
-      const values = [email];
-      const result = await client.query(query, values);
+    const query = `SELECT * FROM JB_USERS WHERE email = $1 AND otp = $2`;
+    const values = [email, otp];
+    const result = await client.query(query, values);
 
-      if (result.rows.length == 0) {
-        console.log("inin")
-        const insertQuery = `INSERT INTO JB_USERS (email) VALUES ($1)`;
-        await client.query(insertQuery, values);
-      }
-
+    if (result.rows.length > 0) {
       const token = jwt.sign({ email }, process.env.TOKEN_SECRET, { expiresIn: "30d" });
       res.status(200).json({ message: "User OTP is correct", token });
-
     } else {
       res.status(400).json({ message: "User OTP is incorrect" });
     }
   } catch (error) {
     console.error("Error:", error);
     res.status(500).json({ error: "Internal server error" });
+  } finally {
+    await client.end();
   }
 });
-
-
 
 module.exports = { sendEmail, verifyOTP };
