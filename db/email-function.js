@@ -67,13 +67,15 @@ const sendEmail = expressAsyncHandler(async (req, res) => {
 
   transporter.sendMail(mailOptions, (error, info) => {
     if (error) {
-      console.log(error);
       res.status(500).send("Error sending email");
     } else {
-      console.log("Email sent successfully!");
       res.status(200).send("Email sent successfully!");
     }
   });
+
+  console.log("2");
+
+  return otp;
 });
 
 const verifyOTP = expressAsyncHandler(async (req, res) => {
@@ -84,19 +86,26 @@ const verifyOTP = expressAsyncHandler(async (req, res) => {
   try {
     await client.connect();
     const { email, otp } = req.body;
+    console.log(email, otp);
 
-    const query = `SELECT * FROM JB_USERS WHERE email = $1 AND otp = $2`;
-    const values = [email, otp];
-    const result = await client.query(query, values);
+    // Assuming `checker` is defined and holds the correct OTP value
+    if (otp === checker) {
+      const query = `SELECT * FROM JB_USERS WHERE email = $1`;
+      const values = [email];
+      const result = await client.query(query, values);
 
-    if (result.rows.length > 0) {
+      if (result.rows.length == 0) {
+        console.log("inin")
+        const insertQuery = `INSERT INTO JB_USERS (email) VALUES ($1)`;
+        await client.query(insertQuery, values);
+      }
+
       const token = jwt.sign({ email }, process.env.TOKEN_SECRET, { expiresIn: "30d" });
       res.status(200).json({ message: "User OTP is correct", token });
     } else {
       res.status(400).json({ message: "User OTP is incorrect" });
     }
   } catch (error) {
-    console.error("Error:", error);
     res.status(500).json({ error: "Internal server error" });
   } finally {
     await client.end();

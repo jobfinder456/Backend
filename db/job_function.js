@@ -3,7 +3,11 @@ require('dotenv').config();
 
 // Reusable database connection pool
 const pool = new Pool({
-    connectionString: process.env.DB_CONNECTION_STRING
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT,
 });
 
 async function executeQuery(query, values = []) {
@@ -22,12 +26,11 @@ async function insertMail(email) {
         const query = 'INSERT INTO USER_MAIL (email) VALUES ($1) RETURNING *';
         const values = [email];
         const result = await client.query(query, values);
-        return result.rows[0]; // Assuming you want to return the inserted row
+        return result.rows[0];
     } finally {
         client.release();
     }
 }
-
 
 async function getuserjobData(email) {
     try {
@@ -35,7 +38,6 @@ async function getuserjobData(email) {
         const userResult = await executeQuery(query, [email]);
 
         if (userResult.length === 0) {
-            console.log("User with email", email, "not found");
             return [];
         }
 
@@ -46,17 +48,13 @@ async function getuserjobData(email) {
 
         const notOkJobsQuery = 'SELECT COUNT(*) AS count FROM JB_JOBS WHERE user_id = $1 AND is_ok = false';
         const notOkJobsResult = await executeQuery(notOkJobsQuery, [userId]);
-        
-        //console.log("Number of jobs with is_ok column as false:", notOkJobsResult[0].count);
 
-        const numOfJobNotLive = notOkJobsResult[0].count
-
-        //console.log("Jobs fetched for user with email", email, ":", jobResult);
+        const numOfJobNotLive = notOkJobsResult[0].count;
 
         const result = {
             jobResult: jobResult,
             is_ok: numOfJobNotLive
-        }
+        };
 
         return result;
     } catch (error) {
@@ -80,7 +78,6 @@ async function getData(offset, limit, searchTerm, location) {
         query += ` OFFSET $1 LIMIT $2`;
         
         const result = await executeQuery(query, [offset, limit]);
-        //console.log("Rows affected", result.rows);
         return result;
     } catch (error) {
         console.error("Error executing query:", error);
@@ -92,7 +89,6 @@ async function getJobData(id) {
     try {
         const query = 'SELECT * FROM JB_JOBS WHERE id = $1';
         const result = await executeQuery(query, [id]);
-        console.log("Job found", result);
         return result;
     } catch (error) {
         console.error("Error executing query:", error);
@@ -103,7 +99,6 @@ async function getJobData(id) {
 async function insertData(company_name, website, logo_url, job_title, work_loc, commitment, remote, job_link, description, name, email) {
     try {
         console.log("vdg")
-        
         const checkUserQuery = 'SELECT id FROM JB_USERS WHERE email = $1';
         const checkUserValues = [email];
         const existingUsers = await executeQuery(checkUserQuery, checkUserValues);
@@ -115,17 +110,15 @@ async function insertData(company_name, website, logo_url, job_title, work_loc, 
             const insertUserValues = [name, email];
             const insertedUser = await executeQuery(insertUserQuery, insertUserValues);
             userId = insertedUser[0].id;
-            console.log("New user inserted:", insertedUser);
         } else {
             userId = existingUsers[0].id;
         }
 
-        const insertJobQuery = 'INSERT INTO JB_JOBS (user_id, company_name, website, logo_url, job_title, work_loc, commitment, remote, job_link, description, name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)';
+        const insertJobQuery = 'INSERT INTO JB_JOBS (user_id, company_name, website, logo_url, job_title, work_loc, commitment, remote, job_link, description, name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *';
         const insertJobValues = [userId, company_name, website, logo_url, job_title, work_loc, commitment, remote, job_link, description, name];
         const insertedJob = await executeQuery(insertJobQuery, insertJobValues);
 
-        console.log("Job inserted:", insertedJob);
-        return insertedJob;
+        return insertedJob[0];
 
     } catch (error) {
         console.error("Error executing query:", error);
@@ -133,13 +126,11 @@ async function insertData(company_name, website, logo_url, job_title, work_loc, 
     }
 }
 
-
 async function deleteData(id) {
     try {
-        const query = 'DELETE FROM JB_JOBS WHERE id = $1';
+        const query = 'DELETE FROM JB_JOBS WHERE id = $1 RETURNING *';
         const result = await executeQuery(query, [id]);
-        console.log("Rows affected:", result.rowCount);
-        return result;
+        return result[0];
     } catch (error) {
         console.error("Error executing query:", error);
         return [];
@@ -158,11 +149,10 @@ async function updateData(id, company_name, website, job_title, work_loc, commit
                 remote = $6, 
                 job_link = $7, 
                 description = $8 
-            WHERE id = $9`;
+            WHERE id = $9 RETURNING *`;
         const values = [company_name, website, job_title, work_loc, commitment, remote, job_link, description, id];
         const result = await executeQuery(query, values);
-        console.log("Rows affected:", result.rowCount);
-        return result;
+        return result[0];
     } catch (error) {
         console.error("Error executing query:", error);
         return [];
