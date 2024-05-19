@@ -27,7 +27,11 @@ const generateOTP = async (email) => {
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    port: process.env.DB_PORT, // Use environment variable for connection string
+    port: process.env.DB_PORT, 
+    ssl: {
+      rejectUnauthorized: false,
+    },
+  // Use environment variable for connection 
   });
 
   await client.connect();
@@ -88,7 +92,11 @@ const verifyOTP = expressAsyncHandler(async (req, res) => {
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    port: process.env.DB_PORT, // Use environment variable for connection string
+    port: process.env.DB_PORT,
+    ssl: {
+      rejectUnauthorized: false,
+    },
+   // Use environment variable for connection 
   });
 
   try {
