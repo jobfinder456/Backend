@@ -23,7 +23,11 @@ let transporter = nodemailer.createTransport({
 
 const generateOTP = async (email) => {
   const client = new Client({
-    connectionString: process.env.DATABASE_URL, // Use environment variable for connection string
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT, // Use environment variable for connection string
   });
 
   await client.connect();
@@ -80,7 +84,11 @@ const sendEmail = expressAsyncHandler(async (req, res) => {
 
 const verifyOTP = expressAsyncHandler(async (req, res) => {
   const client = new Client({
-    connectionString: process.env.DATABASE_URL, // Use environment variable for connection string
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT, // Use environment variable for connection string
   });
 
   try {
