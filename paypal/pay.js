@@ -56,4 +56,4 @@ const createPayment = (userId, jobId, price, successUrl, cancelUrl) => {
   });
 };
 
-module.exports = { createPayment, checkIds };
+module.exports = { createPayment };

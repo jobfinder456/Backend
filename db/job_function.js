@@ -98,6 +98,7 @@ async function getJobData(id) {
 
 async function insertData(company_name, website, logo_url, job_title, work_loc, commitment, remote, job_link, description, name, email) {
     try {
+        console.log("vdg")
         const checkUserQuery = 'SELECT id FROM JB_USERS WHERE email = $1';
         const checkUserValues = [email];
         const existingUsers = await executeQuery(checkUserQuery, checkUserValues);

@@ -109,7 +109,7 @@ router.post("/insert", authMiddleware, upload.single('image'), async (req, res) 
         }
 
         const result = await insertData(company_name, website, imageUrl, job_title, work_loc, commitment, remote, job_link, description, name, email);
-        res.status(201).json({ message: "Data inserted successfully", result });
+        res.status(201).json({ message: "Data inserted successfully" });
     } catch (error) {
         handleError(res, error);
     }
