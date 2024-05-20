@@ -73,14 +73,17 @@ const s3Client = new S3Client({
 
 router.post("/insert", authMiddleware, upload.single('image'), async (req, res) => {
     try {
+        console.log("11")
         const { company_name, website, job_title, work_loc, commitment, remote, job_link, description, name, email } = req.body;
         const image = req.file;
 
         const decEmail = req.email;
 
         if (email !== decEmail) {
+            console.log(email, "---" , decEmail)
             return res.status(403).json({ message: "Different mail, correct your mail" });
         }
+        console.log("44")
 
         if (!company_name || !website || !job_title || !work_loc || !commitment || !remote || !job_link || !description || !name || !email) {
             return res.status(400).json({ error: "Missing required fields" });
