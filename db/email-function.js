@@ -1,14 +1,16 @@
+// routes.js (or whatever your module file is named)
 const express = require("express");
 const expressAsyncHandler = require("express-async-handler");
 const dotenv = require("dotenv");
 const nodemailer = require("nodemailer");
 const otpGenerator = require("otp-generator");
 const jwt = require('jsonwebtoken');
-const {Client} = require('pg');
+const { Client } = require('pg');
 
 dotenv.config();
 
 const app = express();
+app.use(express.json()); // To parse JSON request bodies
 
 let transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -20,18 +22,16 @@ let transporter = nodemailer.createTransport({
   },
 });
 
-
 const generateOTP = async (email) => {
   const client = new Client({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    port: process.env.DB_PORT, 
+    port: process.env.DB_PORT,
     ssl: {
       rejectUnauthorized: false,
     },
-  // Use environment variable for connection 
   });
 
   await client.connect();
@@ -81,8 +81,6 @@ const sendEmail = expressAsyncHandler(async (req, res) => {
     }
   });
 
-  console.log("2");
-
   return otp;
 });
 
@@ -96,26 +94,17 @@ const verifyOTP = expressAsyncHandler(async (req, res) => {
     ssl: {
       rejectUnauthorized: false,
     },
-   // Use environment variable for connection 
   });
 
   try {
     await client.connect();
     const { email, otp } = req.body;
-    console.log(email, otp);
 
-    // Assuming `checker` is defined and holds the correct OTP value
-    if (otp === checker) {
-      const query = `SELECT * FROM JB_USERS WHERE email = $1`;
-      const values = [email];
-      const result = await client.query(query, values);
+    const query = `SELECT * FROM JB_USERS WHERE email = $1 AND otp = $2`;
+    const values = [email, otp];
+    const result = await client.query(query, values);
 
-      if (result.rows.length == 0) {
-        console.log("inin")
-        const insertQuery = `INSERT INTO JB_USERS (email) VALUES ($1)`;
-        await client.query(insertQuery, values);
-      }
-
+    if (result.rows.length > 0) {
       const token = jwt.sign({ email }, process.env.TOKEN_SECRET, { expiresIn: "30d" });
       res.status(200).json({ message: "User OTP is correct", token });
     } else {
