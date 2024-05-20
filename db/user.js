@@ -3,15 +3,7 @@ const {Client} = require('pg');
 
 async function getUserLogin(email) {
     const client = new Client({
-        host: process.env.DB_HOST,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME,
-        port: process.env.DB_PORT,
-        ssl: {
-            rejectUnauthorized: false,
-          },
-        
+        connectionString: process.env.DB_CONNECTION_STRING
     });
     try {
         await client.connect();
@@ -34,7 +26,7 @@ async function getUserLogin(email) {
 
 async function getUserSignUp(name, email) {
     const client = new Client({
-        connectionString: "postgresql://nikhilchopra788:homVKH6tCrJ5@ep-sparkling-dawn-a1iplsg1.ap-southeast-1.aws.neon.tech/jobfinder?sslmode=require"
+        connectionString: process.env.DB_CONNECTION_STRING
     });
     try {
         await client.connect();
