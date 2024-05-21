@@ -44,14 +44,16 @@ router.get("/list", async (req, res) => {
         const limit = parseInt(req.query.limit) || 10;
         const searchTerm = req.query.search || '';
         const location = req.query.loc || '';
+        const remote = req.query.remote ? (req.query.remote === 'true') : undefined;
 
         const offset = (page - 1) * limit;
-        const all = await getData(offset, limit, searchTerm, location);
+        const all = await getData(offset, limit, searchTerm, location, remote);
         res.status(200).json({ all });
     } catch (error) {
         handleError(res, error);
     }
 });
+
 
 router.get("/job/:id", async (req, res) => {
     try {

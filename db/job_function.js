@@ -59,27 +59,42 @@ async function getuserjobData(email) {
     }
 }
 
-async function getData(offset, limit, searchTerm, location) {
+async function getData(offset, limit, searchTerm, location, remote) {
     try {
         let query = `SELECT * FROM JB_JOBS`;
+        let conditions = [];
+        let params = [];
 
-        if (searchTerm && location) {
-            query += ` WHERE (job_title ILIKE '%${searchTerm}%') AND work_loc ILIKE '%${location}%'`;
-        } else if (searchTerm) {
-            query += ` WHERE job_title ILIKE '%${searchTerm}%'`;
-        } else if (location) {
-            query += ` WHERE work_loc ILIKE '%${location}%'`;
+        if (searchTerm) {
+            conditions.push(`job_title ILIKE $${params.length + 1}`);
+            params.push(`%${searchTerm}%`);
         }
 
-        query += ` OFFSET $1 LIMIT $2`;
-        
-        const result = await executeQuery(query, [offset, limit]);
+        if (location) {
+            conditions.push(`work_loc ILIKE $${params.length + 1}`);
+            params.push(`%${location}%`);
+        }
+
+        if (remote !== undefined) {
+            conditions.push(`remote = $${params.length + 1}`);
+            params.push(remote);
+        }
+
+        if (conditions.length > 0) {
+            query += ` WHERE ` + conditions.join(' AND ');
+        }
+
+        query += ` OFFSET $${params.length + 1} LIMIT $${params.length + 2}`;
+        params.push(offset, limit);
+
+        const result = await executeQuery(query, params);
         return result;
     } catch (error) {
         console.error("Error executing query:", error);
         return [];
     }
 }
+
 
 async function getJobData(id) {
     try {
