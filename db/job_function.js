@@ -70,14 +70,12 @@ async function getData(offset, limit, searchTerm, location, remote) {
             params.push(`%${searchTerm}%`);
         }
 
-        if (location) {
-            conditions.push(`work_loc ILIKE $${params.length + 1}`);
-            params.push(`%${location}%`);
-        }
-
-        if (remote !== undefined) {
+        if (remote !== undefined && remote !== null) {
             conditions.push(`remote = $${params.length + 1}`);
             params.push(remote);
+        } else if (location) {
+            conditions.push(`work_loc ILIKE $${params.length + 1}`);
+            params.push(`%${location}%`);
         }
 
         if (conditions.length > 0) {
