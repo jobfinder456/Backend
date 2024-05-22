@@ -70,10 +70,14 @@ async function getData(offset, limit, searchTerm, location, remote) {
             params.push(`%${searchTerm}%`);
         }
 
-        if (remote !== undefined && remote !== null) {
+        // If remote is explicitly true, filter by remote jobs
+        if (remote === true) {
             conditions.push(`remote = $${params.length + 1}`);
             params.push(remote);
-        } else if (location) {
+        }
+
+        // If location is provided, filter by location
+        if (location && remote !== true) {
             conditions.push(`work_loc ILIKE $${params.length + 1}`);
             params.push(`%${location}%`);
         }
