@@ -1,20 +1,29 @@
 const express = require("express");
 const router = express.Router();
-const { createPayment } = require('../paypal/pay');
+const Razorpay = require('razorpay');
+
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID, 
+  key_secret: process.env.RAZORPAY_KEY_SECRET
+});
 
 router.use(express.json());
 
-// POST route for initiating a PayPal payment for a job
 router.post('/create-payment', async (req, res) => {
-  const { userId, jobId, price } = req.body;
-  const successUrl = 'https://getjobs.today/success'; // Modify with your actual success URL
-  const cancelUrl = 'https://getjobs.today/cancel';   // Modify with your actual cancel URL
+  const { jobId, price } = req.body;
+
+  const options = {
+    amount:  5000, // amount in the smallest currency unit
+    currency: "INR",
+    receipt: `receipt_order_${jobId}`
+  };
 
   try {
-    const paymentUrl = await createPayment(userId, jobId, price, successUrl, cancelUrl);
-    res.json({ paymentUrl });
+    const order = await razorpay.orders.create(options);
+    res.json({ orderId: order.id });
   } catch (error) {
-    res.status(500);
+    console.error("Error creating Razorpay order:", error);
+    res.status(500).json({ error: "Failed to create Razorpay order" });
   }
 });
 
