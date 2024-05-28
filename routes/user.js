@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const express = require("express");
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const { getUserLogin, getUserSignUp } = require('../db/user');
 const {authMiddleware} = require('../middleware')
 const router = express.Router();

@@ -6,8 +6,8 @@ const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const multer = require("multer");
 const sharp = require("sharp");
 const { sendEmail, verifyOTP } = require("../db/email-function");
-
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });

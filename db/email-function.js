@@ -1,14 +1,12 @@
 // routes.js (or whatever your module file is named)
 const express = require("express");
 const expressAsyncHandler = require("express-async-handler");
-const dotenv = require("dotenv");
 const nodemailer = require("nodemailer");
 const otpGenerator = require("otp-generator");
 const jwt = require('jsonwebtoken');
 const { Client } = require('pg');
-
-dotenv.config();
-
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const app = express();
 app.use(express.json()); // To parse JSON request bodies
 

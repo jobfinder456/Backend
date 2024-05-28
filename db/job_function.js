@@ -1,6 +1,6 @@
 const { Pool } = require('pg');
-require('dotenv').config();
-
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 // Reusable database connection pool
 const pool = new Pool({
     connectionString: process.env.DB_CONNECTION_STRING
@@ -16,15 +16,25 @@ async function executeQuery(query, values = []) {
     }
 }
 
+async function jobUpdate(jobtestId) {
+    try {
+        const queryText = 'UPDATE jb_jobs SET is_ok = TRUE WHERE id = $1;';
+        await executeQuery(queryText, [jobtestId]);
+        console.log('Job status updated successfully');
+    } catch (error) {
+        console.error('Error updating job status:', error);
+    }
+}
+
 async function insertMail(email) {
-    const client = await pool.connect();
     try {
         const query = 'INSERT INTO USER_MAIL (email) VALUES ($1) RETURNING *';
         const values = [email];
-        const result = await client.query(query, values);
-        return result.rows[0];
-    } finally {
-        client.release();
+        const result = await executeQuery(query, values);
+        return result[0];
+    } catch (error) {
+        console.error('Error inserting email:', error);
+        return [];
     }
 }
 
@@ -70,13 +80,11 @@ async function getData(offset, limit, searchTerm, location, remote) {
             params.push(`%${searchTerm}%`);
         }
 
-        // If remote is explicitly true, filter by remote jobs
         if (remote === true) {
             conditions.push(`remote = $${params.length + 1}`);
             params.push(remote);
         }
 
-        // If location is provided, filter by location
         if (location && remote !== true) {
             conditions.push(`work_loc ILIKE $${params.length + 1}`);
             params.push(`%${location}%`);
@@ -97,7 +105,6 @@ async function getData(offset, limit, searchTerm, location, remote) {
     }
 }
 
-
 async function getJobData(id) {
     try {
         const query = 'SELECT * FROM JB_JOBS WHERE id = $1';
@@ -111,7 +118,6 @@ async function getJobData(id) {
 
 async function insertData(company_name, website, logo_url, job_title, work_loc, commitment, remote, job_link, description, name, email) {
     try {
-        console.log("vdg")
         const checkUserQuery = 'SELECT id FROM JB_USERS WHERE email = $1';
         const checkUserValues = [email];
         const existingUsers = await executeQuery(checkUserQuery, checkUserValues);
@@ -132,7 +138,6 @@ async function insertData(company_name, website, logo_url, job_title, work_loc, 
         const insertedJob = await executeQuery(insertJobQuery, insertJobValues);
 
         return insertedJob[0];
-
     } catch (error) {
         console.error("Error executing query:", error);
         return [];
@@ -173,6 +178,7 @@ async function updateData(id, company_name, website, job_title, work_loc, commit
 }
 
 module.exports = {
+    jobUpdate,
     getData,
     insertData,
     deleteData,
