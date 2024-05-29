@@ -4,6 +4,7 @@ const fs = require('fs');
 const cors = require("cors");
 const job = require('./routes/jobs');
 const user = require('./routes/user');
+const pay = require('./routes/job-pay');
 
 // Create an Express application
 const app = express();
@@ -14,6 +15,7 @@ app.use(cors());
 // Define routes
 app.use("/api/v1", job);
 app.use("/api/v1", user);
+app.use("/api/v1", pay)
 
 // Paths to your SSL certificate and key files
 const privateKeyPath = 'cert/ssl/private.key';
