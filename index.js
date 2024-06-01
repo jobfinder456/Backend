@@ -10,7 +10,9 @@ const pay = require('./routes/job-pay');
 const app = express();
 
 // Enable CORS
-app.use(cors());
+app.use(cors({
+  origin: 'https://getjobs.today', // Allow only your frontend domain
+}));
 
 // Define routes
 app.use("/api/v1", job);
@@ -19,7 +21,7 @@ app.use("/api/v1", pay)
 
 // Paths to your SSL certificate and key files
 const privateKeyPath = 'cert/ssl/private.key';
-const certificatePath = 'cert/ssl/certificate.crt';
+const certificatePath = 'cert/ssl/get-jobs.xyz.chained.crt';
 
 
 // Read the SSL certificate and key files
