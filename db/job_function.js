@@ -1,5 +1,7 @@
 const { Pool } = require('pg');
+const cron = require('node-cron');
 const path = require('path');
+
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 // Reusable database connection pool
 const pool = new Pool({
@@ -16,10 +18,12 @@ async function executeQuery(query, values = []) {
     }
 }
 
-async function jobUpdate(jobtestId) {
+async function jobUpdate(jobId) {
     try {
-        const queryText = 'UPDATE jb_jobs SET is_ok = TRUE WHERE id = $1;';
-        await executeQuery(queryText, [jobtestId]);
+        const queryText = 'UPDATE jb_jobs SET is_ok = TRUE, last_update = CURRENT_DATE WHERE id = $1';
+        const queryParams = [jobId];
+
+        await executeQuery(queryText, queryParams);
         console.log('Job status updated successfully');
     } catch (error) {
         console.error('Error updating job status:', error);
@@ -177,6 +181,21 @@ async function updateData(id, company_name, website, job_title, work_loc, commit
     }
 }
 
+cron.schedule('0 0 * * *', async () => { // Run every minute
+    try {
+        const queryText = `
+            UPDATE jb_jobs 
+            SET is_ok = FALSE 
+            WHERE is_ok = TRUE 
+              AND last_update < CURRENT_DATE - INTERVAL '1 day';
+        `;
+        await executeQuery(queryText);
+        console.log('Scheduled job status update completed');
+    } catch (error) {
+        console.error('Error updating job statuses:', error);
+    }
+});
+
 module.exports = {
     jobUpdate,
     getData,
@@ -185,5 +204,6 @@ module.exports = {
     updateData,
     getJobData,
     getuserjobData,
-    insertMail
+    insertMail,
+    executeQuery
 };
