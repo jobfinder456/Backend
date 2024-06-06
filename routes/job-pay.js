@@ -13,6 +13,7 @@ router.use(express.json());
 
 router.post('/create-payment', async (req, res) => {
   const { jobId, price } = req.body;
+  console.log(jobId)
 
   const options = {
     amount:  price, // amount in the smallest currency unit
