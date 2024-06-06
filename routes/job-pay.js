@@ -12,12 +12,10 @@ const razorpay = new Razorpay({
 router.use(express.json());
 
 router.post("/create-payment", async (req, res) => {
-  let { jobId, price } = req.body;
+  const { jobId: rawJobId, price } = req.body;
 
   // Ensure jobId is an array, if not, convert it to an array
-  if (!Array.isArray(jobId)) {
-    jobId = [jobId];
-  }
+  const jobId = Array.isArray(rawJobId) ? rawJobId : [rawJobId];
 
   num = jobId.length;
   console.log(price * num);
@@ -40,12 +38,11 @@ router.post("/create-payment", async (req, res) => {
 });
 
 router.post("/verify-payment", async (req, res) => {
-  let { raz_pay_id, raz_ord_id, raz_sign, jobId } = req.body;
+  const { raz_pay_id, raz_ord_id, raz_sign, jobId: rawJobId } = req.body;
+
   try {
     // Ensure jobId is an array, if not, convert it to an array
-    if (!Array.isArray(jobId)) {
-      jobId = [jobId];
-    }
+    const jobId = Array.isArray(rawJobId) ? rawJobId : [rawJobId];
     const sha = crypto.createHmac(
       "sha256",
       process.env.RAZORPAY_TEST_KEY_SECRET
