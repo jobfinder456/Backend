@@ -18,17 +18,21 @@ async function executeQuery(query, values = []) {
     }
 }
 
-async function jobUpdate(jobId) {
+async function jobUpdate(jobIds) {
+    const queryText = 'UPDATE jb_jobs SET is_ok = TRUE, last_update = $2 WHERE id = $1';
+    const da = '2024-06-04' 
     try {
-        const queryText = 'UPDATE jb_jobs SET is_ok = TRUE, last_update = CURRENT_DATE WHERE id = $1';
-        const queryParams = [jobId];
-
-        await executeQuery(queryText, queryParams);
-        console.log('Job status updated successfully');
+        // Iterate over the array of job IDs and update each one
+        for (const jobId of jobIds) {
+            const queryParams = [jobId, da];
+            await executeQuery(queryText, queryParams);
+            console.log(`Job status updated successfully for job ID: ${jobId}`);
+        }
     } catch (error) {
         console.error('Error updating job status:', error);
     }
 }
+
 
 async function insertMail(email) {
     try {
@@ -181,7 +185,7 @@ async function updateData(id, company_name, website, job_title, work_loc, commit
     }
 }
 
-cron.schedule('0 0 * * *', async () => { // Run every minute
+cron.schedule('*/2 * * * *', async () => { // Run every minute
     try {
         const queryText = `
             UPDATE jb_jobs 

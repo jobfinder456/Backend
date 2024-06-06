@@ -5,18 +5,21 @@ const crypto = require("crypto");
 const { jobUpdate } = require("../db/job_function");
 
 const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET
+  key_id: process.env.RAZORPAY_TEST_KEY_ID,
+  key_secret: process.env.RAZORPAY_TEST_KEY_SECRET
 });
 
 router.use(express.json());
 
 router.post('/create-payment', async (req, res) => {
   const { jobId, price } = req.body;
+  num = jobId.length
+  console.log(price*num)
   console.log(jobId)
+  console.log(price)
 
   const options = {
-    amount: price, // amount in the smallest currency unit
+    amount: price * num, // amount in the smallest currency unit
     currency: "INR",
     receipt: `receipt_order_${jobId}`
   };
@@ -33,7 +36,7 @@ router.post('/create-payment', async (req, res) => {
 router.post('/verify-payment', async (req, res) => {
   const { raz_pay_id, raz_ord_id, raz_sign, jobId } = req.body;
   try {
-    const sha = crypto.createHmac("sha256", process.env.RAZORPAY_KEY_SECRET);
+    const sha = crypto.createHmac("sha256", process.env.RAZORPAY_TEST_KEY_SECRET);
     sha.update(`${raz_ord_id}|${raz_pay_id}`);
     const digest = sha.digest("hex");
     if (digest !== raz_sign) {
