@@ -3,10 +3,10 @@ const express = require("express");
 const expressAsyncHandler = require("express-async-handler");
 const nodemailer = require("nodemailer");
 const otpGenerator = require("otp-generator");
-const jwt = require('jsonwebtoken');
-const { Client } = require('pg');
-const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '../.env') });
+const jwt = require("jsonwebtoken");
+const { Client } = require("pg");
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, "../.env") });
 const app = express();
 app.use(express.json()); // To parse JSON request bodies
 
@@ -22,7 +22,7 @@ let transporter = nodemailer.createTransport({
 
 const generateOTP = async (email) => {
   const client = new Client({
-    connectionString: process.env.DB_CONNECTION_STRING
+    connectionString: process.env.DB_CONNECTION_STRING,
   });
 
   await client.connect();
@@ -77,7 +77,7 @@ const sendEmail = expressAsyncHandler(async (req, res) => {
 
 const verifyOTP = expressAsyncHandler(async (req, res) => {
   const client = new Client({
-    connectionString: process.env.DB_CONNECTION_STRING
+    connectionString: process.env.DB_CONNECTION_STRING,
   });
 
   try {
@@ -89,7 +89,9 @@ const verifyOTP = expressAsyncHandler(async (req, res) => {
     const result = await client.query(query, values);
 
     if (result.rows.length > 0) {
-      const token = jwt.sign({ email }, process.env.TOKEN_SECRET, { expiresIn: "30d" });
+      const token = jwt.sign({ email }, process.env.TOKEN_SECRET, {
+        expiresIn: "30d",
+      });
       res.status(200).json({ message: "User OTP is correct", token });
     } else {
       res.status(400).json({ message: "User OTP is incorrect" });
