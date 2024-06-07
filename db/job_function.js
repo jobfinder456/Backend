@@ -3,7 +3,6 @@ const cron = require("node-cron");
 const path = require("path");
 
 require("dotenv").config({ path: path.join(__dirname, "../.env") });
-// Reusable database connection pool
 const pool = new Pool({
   connectionString: process.env.DB_CONNECTION_STRING,
 });
@@ -19,16 +18,12 @@ async function executeQuery(query, values = []) {
 }
 
 async function jobUpdate(jobIds) {
-  console.log("heeheheheheh ---- ", jobIds);
   const queryText =
-    "UPDATE jb_jobs SET is_ok = TRUE, last_update = $2 WHERE id = $1";
-  const da = "2024-06-05";
+    "UPDATE jb_jobs SET is_ok = TRUE, last_update = CURRENT_DATE WHERE id = $1";
   try {
-    // Iterate over the array of job IDs and update each one
     for (const jobId of jobIds) {
-      const queryParams = [jobId, da];
+      const queryParams = [jobId];
       await executeQuery(queryText, queryParams);
-      console.log(`Job status updated successfully for job ID: ${jobId}`);
     }
   } catch (error) {
     console.error("Error updating job status:", error);
@@ -237,13 +232,13 @@ async function updateData(
 }
 
 cron.schedule("0 0 * * *", async () => {
-  // Run every minute
+  
   try {
     const queryText = `
             UPDATE jb_jobs 
             SET is_ok = FALSE 
             WHERE is_ok = TRUE 
-              AND last_update < CURRENT_DATE - INTERVAL '1 day';
+              AND last_update < CURRENT_DATE - INTERVAL '30 day';
         `;
     await executeQuery(queryText);
     console.log("Scheduled job status update completed");

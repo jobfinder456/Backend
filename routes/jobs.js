@@ -29,8 +29,8 @@ router.post("/sendEmail", sendEmail);
 router.post("/insert-user-email", async (req, res) => {
   try {
     const { email } = req.body;
-    const result = await insertMail(email);
-    res.status(201).json({ message: "Email saved", result });
+    await insertMail(email);
+    res.status(200).json({ message: "Email saved" });
   } catch (error) {
     handleError(res, error);
   }
@@ -80,13 +80,8 @@ const s3Client = new S3Client({
   region: process.env.AWS_REGION,
 });
 
-router.post(
-  "/insert",
-  authMiddleware,
-  upload.single("image"),
-  async (req, res) => {
+router.post( "/insert", authMiddleware, upload.single("image"), async (req, res) => {
     try {
-      console.log("11");
       const {
         company_name,
         website,
@@ -104,12 +99,10 @@ router.post(
       const decEmail = req.email;
 
       if (email !== decEmail) {
-        console.log(email, "---", decEmail);
         return res
           .status(403)
           .json({ message: "Different mail, correct your mail" });
       }
-      console.log("44");
 
       if (
         !company_name ||
@@ -148,7 +141,7 @@ router.post(
         imageUrl = `https://${params.Bucket}.s3.amazonaws.com/${params.Key}`;
       }
 
-      const result = await insertData(
+      await insertData(
         company_name,
         website,
         imageUrl,

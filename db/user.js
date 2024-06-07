@@ -18,7 +18,7 @@ async function getUserLogin(email) {
     return true;
   } catch (error) {
     console.error("Error executing query:", error);
-    return false; // Return false in case of error
+    return false; 
   } finally {
     await client.end();
   }
@@ -35,17 +35,17 @@ async function getUserSignUp(name, email) {
     const result = await client.query(query, value);
 
     if (result.rows.length > 0) {
-      return false; // User already exists
+      return false; 
     }
 
     const insertQuery = `INSERT INTO JB_USERS (name, email) VALUES ($1, $2)`;
     const insertValues = [name, email];
     await client.query(insertQuery, insertValues);
 
-    return true; // User signed up successfully
+    return true; 
   } catch (error) {
     console.error("Error executing query:", error);
-    return false; // Return false in case of error
+    return false; 
   } finally {
     await client.end();
   }

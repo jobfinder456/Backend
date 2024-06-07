@@ -1,4 +1,3 @@
-// routes.js (or whatever your module file is named)
 const express = require("express");
 const expressAsyncHandler = require("express-async-handler");
 const nodemailer = require("nodemailer");
@@ -8,15 +7,15 @@ const { Client } = require("pg");
 const path = require("path");
 require("dotenv").config({ path: path.join(__dirname, "../.env") });
 const app = express();
-app.use(express.json()); // To parse JSON request bodies
+app.use(express.json()); 
 
 let transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: process.env.SMTP_PORT,
-  secure: true, // true for 465, false for other ports
+  secure: true,
   auth: {
-    user: process.env.SMTP_MAIL, // generated ethereal user
-    pass: process.env.SMTP_PASSWORD, // generated ethereal password
+    user: process.env.SMTP_MAIL, 
+    pass: process.env.SMTP_PASSWORD, 
   },
 });
 

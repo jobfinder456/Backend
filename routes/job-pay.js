@@ -14,16 +14,11 @@ router.use(express.json());
 router.post("/create-payment", async (req, res) => {
   const { jobId: rawJobId, price } = req.body;
 
-  // Ensure jobId is an array, if not, convert it to an array
   const jobId = Array.isArray(rawJobId) ? rawJobId : [rawJobId];
-
   num = jobId.length;
-  console.log(price * num);
-  console.log(jobId);
-  console.log(price);
-
+  
   const options = {
-    amount: price * num, // amount in the smallest currency unit
+    amount: price * num, 
     currency: "INR",
     receipt: `receipt_order_${jobId}`,
   };
@@ -33,7 +28,7 @@ router.post("/create-payment", async (req, res) => {
     res.json({ orderId: order.id });
   } catch (error) {
     console.error("Error creating Razorpay order:", error);
-    res.status(500).json({ error: "Failed to create Razorpay order" });
+    res.status(401).json({ error: "Failed to create Razorpay order" });
   }
 });
 
@@ -41,7 +36,7 @@ router.post("/verify-payment", async (req, res) => {
   const { raz_pay_id, raz_ord_id, raz_sign, jobId: rawJobId } = req.body;
 
   try {
-    // Ensure jobId is an array, if not, convert it to an array
+    
     const jobId = Array.isArray(rawJobId) ? rawJobId : [rawJobId];
     const sha = crypto.createHmac(
       "sha256",
@@ -60,7 +55,7 @@ router.post("/verify-payment", async (req, res) => {
     });
   } catch (error) {
     console.error("Error verifying Razorpay order:", error);
-    res.status(500).json({ error: "Failed to verify Razorpay order" });
+    res.status(401).json({ error: "Failed to verify Razorpay order" });
   }
 });
 

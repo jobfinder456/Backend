@@ -57,11 +57,9 @@ router.get("/verifyuser", async (req, res) => {
   }
 
   const token = authHeader.split(" ")[1];
-  console.log(token);
 
   try {
     const verify = jwt.verify(token, process.env.TOKEN_SECRET);
-    console.log(verify.email);
     res.status(200).json({
       message: "Valid token",
       email: verify.email,
