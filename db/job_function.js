@@ -77,7 +77,7 @@ async function getuserjobData(email) {
 async function getData(offset, limit, searchTerm, location, remote) {
   try {
     let query = `SELECT * FROM JB_JOBS`;
-    let conditions = [];
+    let conditions = [`is_ok = true`]; // Adding is_ok = true condition
     let params = [];
 
     if (searchTerm) {
@@ -112,7 +112,7 @@ async function getData(offset, limit, searchTerm, location, remote) {
 
 async function getJobData(id) {
   try {
-    const query = "SELECT * FROM JB_JOBS WHERE id = $1";
+    const query = "SELECT * FROM JB_JOBS WHERE id = $1 AND is_ok = true";
     const result = await executeQuery(query, [id]);
     return result;
   } catch (error) {
