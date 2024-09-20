@@ -1,12 +1,12 @@
 const express = require("express");
-const https = require("https");
-const fs = require("fs");
-const cors = require("cors");
-const job = require("./routes/jobs");
-const user = require("./routes/user");
-const pay = require("./routes/job-pay");
-
 const app = express();
+const cors = require("cors");
+const usersignup = require("./routes/signup");
+const usersignin = require("./routes/signin");
+const userotp = require("./routes/otpsend");
+const job = require("./routes/jobs");
+const userforget = require("./routes/forgetpass");
+const pay = require("./routes/job-pay");
 
 app.use(
   cors({
@@ -14,22 +14,13 @@ app.use(
   })
 );
 
+app.use("/api/v1", usersignup);
+app.use("/api/v1", usersignin);
+app.use("/api/v1", userotp);
 app.use("/api/v1", job);
-app.use("/api/v1", user);
+app.use("/api/v1", userforget);
 app.use("/api/v1", pay);
 
-const privateKeyPath = "cert/ssl/private.key";
-const certificatePath = "cert/ssl/get-jobs.xyz.chained.crt";
-
-const privateKey = fs.readFileSync(privateKeyPath, "utf8");
-const certificate = fs.readFileSync(certificatePath, "utf8");
-
-const credentials = { key: privateKey, cert: certificate };
-
-const PORT = 443;
-
-const server = https.createServer(credentials, app);
-
-server.listen(PORT, () => {
-  console.log(`Server running at ${PORT}/`);
+app.listen(8282, () => {
+  console.log("server started in port 8282");
 });
