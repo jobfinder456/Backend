@@ -15,7 +15,7 @@ async function otpCheck(email, otp) {
     if (result.rows.length === 0) {
       return false; 
     }
-    const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: "30d" });
+    const token = jwt.sign({ email }, process.env.SECRET_KEY, { expiresIn: "30d" });
     return { token };
   } catch (error) {
     console.error("Error during OTP verification:", error);
