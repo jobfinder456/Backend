@@ -2,6 +2,7 @@ const express = require("express");
 const { otpSenderMail } = require("../db/user-otp");
 const { Client } = require("pg");
 const router = express.Router();
+const bcrypt = require("bcryptjs");
 
 router.use(express.json());
 

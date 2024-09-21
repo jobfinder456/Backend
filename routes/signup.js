@@ -20,7 +20,7 @@ router.get("/testsignup", async (req, res) => {
 
 router.post("/signup", async (req, res) => {
   const { email, password } = req.body;
-
+  console.log(email ,"-----", password)
   const emailRes = emailSchema.safeParse(email);
   const passRes = passwordSchema.safeParse(password);
 
