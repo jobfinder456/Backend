@@ -2,34 +2,18 @@ const express = require("express");
 const {
   getData,
   insertData,
-  updateData,
-  deleteData,
-  getJobData,
+  updateJob,
+  deleteJob,
+  getJobById,
   getuserjobData,
-  insertMail,
+  getUserProfileByEmail
 } = require("../db/job_function");
 const { authMiddleware } = require("../middleware");
 const router = express.Router();
-const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
-const multer = require("multer");
-const sharp = require("sharp");
 const path = require("path");
 require("dotenv").config({ path: path.join(__dirname, "../.env") });
 
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
-
 router.use(express.json());
-
-router.post("/insert-user-email", async (req, res) => {
-  try {
-    const { email } = req.body;
-    await insertMail(email);
-    res.status(200).json({ message: "Email saved" });
-  } catch (error) {
-    handleError(res, error);
-  }
-});
 
 router.post("/users-list", authMiddleware, async (req, res) => {
   try {
@@ -57,122 +41,52 @@ router.get("/list", async (req, res) => {
   }
 });
 
-router.get("/job/:id", async (req, res) => {
+router.get("/jobs/:id", async (req, res) => {
+  const jobId = req.params.id;
+
   try {
-    const { id } = req.params;
-    const result = await getJobData(id);
-    res.status(200).json({ message: "Job found", result });
+    const job = await getJobById(jobId);
+    if (!job) {
+      return res.status(404).json({ error: "Job not found" });
+    }
+    res.status(200).json(job);
   } catch (error) {
     handleError(res, error);
   }
 });
 
-const s3Client = new S3Client({
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  },
-  region: process.env.AWS_REGION,
-});
-
-router.post( "/insert", authMiddleware, upload.single("image"), async (req, res) => {
-    try {
-      const {
-        company_name,
-        website,
-        job_title,
-        work_loc,
-        commitment,
-        remote,
-        job_link,
-        description,
-        name,
-        email,
-      } = req.body;
-      const image = req.file;
-
-      const decEmail = req.email;
-
-      if (email !== decEmail) {
-        return res
-          .status(403)
-          .json({ message: "Different mail, correct your mail" });
-      }
-
-      if (
-        !company_name ||
-        !website ||
-        !job_title ||
-        !work_loc ||
-        !commitment ||
-        !remote ||
-        !job_link ||
-        !description ||
-        !name ||
-        !email
-      ) {
-        return res.status(400).json({ error: "Missing required fields" });
-      }
-
-      let imageUrl;
-
-      if (!image) {
-        imageUrl = "false";
-      } else {
-        const imageBuffer = await sharp(image.buffer)
-          .resize({ height: 400, width: 400, fit: "cover" })
-          .toBuffer();
-
-        const imageName = `${company_name}`;
-
-        const params = {
-          Bucket: "getjobs",
-          Key: `images/${imageName}.png`,
-          Body: imageBuffer,
-          ContentType: image.mimetype,
-        };
-
-        await s3Client.send(new PutObjectCommand(params));
-        imageUrl = `https://${params.Bucket}.s3.amazonaws.com/${params.Key}`;
-      }
-
-      await insertData(
-        company_name,
-        website,
-        imageUrl,
-        job_title,
-        work_loc,
-        commitment,
-        remote,
-        job_link,
-        description,
-        name,
-        email
-      );
-      res.status(201).json({ message: "Data inserted successfully" });
-    } catch (error) {
-      handleError(res, error);
-    }
-  }
-);
-
-router.put("/update/:id", authMiddleware, async (req, res) => {
+router.post( "/insert", async (req, res) => {
   try {
-    const { id } = req.params;
     const {
-      company_name,
-      website,
       job_title,
       work_loc,
       commitment,
       remote,
       job_link,
       description,
+      email
     } = req.body;
-    const result = await updateData(
-      id,
-      company_name,
-      website,
+
+    if (
+      !job_title ||
+      !work_loc ||
+      !commitment ||
+      !remote ||
+      !job_link ||
+      !description ||
+      !email
+    ) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    // Fetch the user_profile.id based on the email provided
+    const profile = await getUserProfileByEmail(email);
+    if (!profile) {
+      return res.status(404).json({ error: "Profile not found" });
+    }
+
+    await insertData(
+      profile.id, 
       job_title,
       work_loc,
       commitment,
@@ -180,21 +94,55 @@ router.put("/update/:id", authMiddleware, async (req, res) => {
       job_link,
       description
     );
-    res.status(200).json({ message: "Data updated successfully", result });
+    res.status(201).json({ message: "Job inserted successfully" });
+  } catch (error) {
+    handleError(res, error);
+  }
+}
+);
+
+router.put("/jobs/:id", async (req, res) => {
+  const jobId = req.params.id;
+  const { job_title, work_loc, commitment, remote, job_link, description } = req.body;
+
+  if (!job_title || !work_loc || !commitment || !remote || !job_link || !description) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  try {
+    const updatedJob = await updateJob(jobId, {
+      job_title,
+      work_loc,
+      commitment,
+      remote,
+      job_link,
+      description
+    });
+
+    if (!updatedJob) {
+      return res.status(404).json({ error: "Job not found or update failed" });
+    }
+
+    res.status(200).json({ message: "Job updated successfully", job: updatedJob });
   } catch (error) {
     handleError(res, error);
   }
 });
 
-router.delete("/delete/:id", authMiddleware, async (req, res) => {
+router.delete("/jobs/:id", async (req, res) => {
+  const jobId = req.params.id;
+
   try {
-    const { id } = req.params;
-    const result = await deleteData(id);
-    res.status(200).json({ message: "Data deleted successfully", result });
+    const deleted = await deleteJob(jobId);
+    if (!deleted) {
+      return res.status(404).json({ error: "Job not found" });
+    }
+    res.status(200).json({ message: "Job deleted successfully" });
   } catch (error) {
     handleError(res, error);
   }
 });
+
 
 function handleError(res, error) {
   console.error(error);

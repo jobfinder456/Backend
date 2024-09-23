@@ -3,7 +3,7 @@ const nodemailer = require("nodemailer");
 const path = require("path");
 require("dotenv").config({ path: path.join(__dirname, "../.env") });
 
-const SECRET_KEY = process.env.SECRET_KEY;
+//const SECRET_KEY = process.env.SECRET_KEY;
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,

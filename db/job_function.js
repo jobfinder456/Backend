@@ -30,18 +30,6 @@ async function jobUpdate(jobIds) {
   }
 }
 
-async function insertMail(email) {
-  try {
-    const query = "INSERT INTO USER_MAIL (email) VALUES ($1) RETURNING *";
-    const values = [email];
-    const result = await executeQuery(query, values);
-    return result[0];
-  } catch (error) {
-    console.error("Error inserting email:", error);
-    return [];
-  }
-}
-
 async function getuserjobData(email) {
   try {
     const query = "SELECT id FROM JB_USERS WHERE email = $1";
@@ -77,7 +65,7 @@ async function getuserjobData(email) {
 async function getData(offset, limit, searchTerm, location, remote) {
   try {
     let query = `SELECT * FROM JB_JOBS`;
-    let conditions = [`is_ok = true`]; // Adding is_ok = true condition
+    let conditions = [`is_ok = true`]; 
     let params = [];
 
     if (searchTerm) {
@@ -110,89 +98,32 @@ async function getData(offset, limit, searchTerm, location, remote) {
   }
 }
 
-async function getJobData(id) {
+async function getJobById(jobId) {
   try {
-    const query = "SELECT * FROM JB_JOBS WHERE id = $1 AND is_ok = true";
-    const result = await executeQuery(query, [id]);
-    return result;
+    const query = `
+      SELECT 
+        jb_jobs.job_title,
+        jb_jobs.work_loc,
+        jb_jobs.commitment,
+        jb_jobs.remote,
+        jb_jobs.job_link,
+        jb_jobs.description,
+        user_profile.email 
+      FROM jb_jobs 
+      JOIN user_profile ON jb_jobs.user_profile_id = user_profile.id 
+      WHERE jb_jobs.id = $1
+    `;
+    const job = await executeQuery(query, [jobId]);
+    return job[0];
   } catch (error) {
-    console.error("Error executing query:", error);
-    return [];
+    console.error("Error fetching job by ID:", error);
+    return null;
   }
 }
+
 
 async function insertData(
-  company_name,
-  website,
-  logo_url,
-  job_title,
-  work_loc,
-  commitment,
-  remote,
-  job_link,
-  description,
-  name,
-  email
-) {
-  try {
-    const checkUserQuery = "SELECT id FROM JB_USERS WHERE email = $1";
-    const checkUserValues = [email];
-    const existingUsers = await executeQuery(checkUserQuery, checkUserValues);
-
-    let userId;
-
-    if (existingUsers.length === 0) {
-      const insertUserQuery =
-        "INSERT INTO JB_USERS (name, email) VALUES ($1, $2) RETURNING id";
-      const insertUserValues = [name, email];
-      const insertedUser = await executeQuery(
-        insertUserQuery,
-        insertUserValues
-      );
-      userId = insertedUser[0].id;
-    } else {
-      userId = existingUsers[0].id;
-    }
-
-    const insertJobQuery =
-      "INSERT INTO JB_JOBS (user_id, company_name, website, logo_url, job_title, work_loc, commitment, remote, job_link, description, name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *";
-    const insertJobValues = [
-      userId,
-      company_name,
-      website,
-      logo_url,
-      job_title,
-      work_loc,
-      commitment,
-      remote,
-      job_link,
-      description,
-      name,
-    ];
-    const insertedJob = await executeQuery(insertJobQuery, insertJobValues);
-
-    return insertedJob[0];
-  } catch (error) {
-    console.error("Error executing query:", error);
-    return [];
-  }
-}
-
-async function deleteData(id) {
-  try {
-    const query = "DELETE FROM JB_JOBS WHERE id = $1 RETURNING *";
-    const result = await executeQuery(query, [id]);
-    return result[0];
-  } catch (error) {
-    console.error("Error executing query:", error);
-    return [];
-  }
-}
-
-async function updateData(
-  id,
-  company_name,
-  website,
+  user_profile_id,
   job_title,
   work_loc,
   commitment,
@@ -201,60 +132,130 @@ async function updateData(
   description
 ) {
   try {
-    const query = `
-            UPDATE JB_JOBS 
-            SET company_name = $1, 
-                website = $2, 
-                job_title = $3, 
-                work_loc = $4,
-                commitment = $5, 
-                remote = $6, 
-                job_link = $7, 
-                description = $8 
-            WHERE id = $9 RETURNING *`;
-    const values = [
-      company_name,
-      website,
+    const insertJobQuery = `
+      INSERT INTO jb_jobs (
+        user_profile_id, 
+        job_title, 
+        work_loc, 
+        commitment, 
+        remote, 
+        job_link, 
+        description
+      ) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7) 
+      RETURNING *`;
+    const insertJobValues = [
+      user_profile_id,
       job_title,
       work_loc,
       commitment,
       remote,
       job_link,
       description,
-      id,
     ];
-    const result = await executeQuery(query, values);
-    return result[0];
+    const insertedJob = await executeQuery(insertJobQuery, insertJobValues);
+    return insertedJob[0];
   } catch (error) {
-    console.error("Error executing query:", error);
+    console.error("Error inserting job data:", error);
     return [];
   }
 }
 
-cron.schedule("0 0 * * *", async () => {
-  
+
+async function deleteJob(jobId) {
   try {
-    const queryText = `
-            UPDATE jb_jobs 
-            SET is_ok = FALSE 
-            WHERE is_ok = TRUE 
-              AND last_update < CURRENT_DATE - INTERVAL '30 day';
-        `;
-    await executeQuery(queryText);
-    console.log("Scheduled job status update completed");
+    const query = `DELETE FROM jb_jobs WHERE id = $1 RETURNING *`;
+    const deletedJob = await executeQuery(query, [jobId]);
+    return deletedJob[0];
   } catch (error) {
-    console.error("Error updating job statuses:", error);
+    console.error("Error deleting job:", error);
+    return null;
   }
-});
+}
+
+
+async function updateJob(jobId, jobData) {
+  const { job_title, work_loc, commitment, remote, job_link, description } = jobData;
+
+  try {
+    const query = `
+      UPDATE jb_jobs
+      SET 
+        job_title = $1,
+        work_loc = $2,
+        commitment = $3,
+        remote = $4,
+        job_link = $5,
+        description = $6
+      WHERE id = $7
+      RETURNING *
+    `;
+    const updatedJob = await executeQuery(query, [
+      job_title,
+      work_loc,
+      commitment,
+      remote,
+      job_link,
+      description,
+      jobId,
+    ]);
+    return updatedJob[0];
+  } catch (error) {
+    console.error("Error updating job:", error);
+    return null;
+  }
+}
+
+
+async function insertProfile(company_name, website, name, email, signedUrl) {
+  try {
+      // Step 1: Find the user ID from jb_users using email
+      const findUserQuery = 'SELECT id FROM jb_users WHERE email = $1';
+      const userResult = await executeQuery(findUserQuery, [email]);
+
+      // If no user is found, return an error
+      if (userResult.length === 0) {
+          return { error: "User not found" };
+      }
+
+      const userId = userResult[0].id;
+
+      // Step 2: Insert the profile into user_profile
+      const insertProfileQuery = `
+          INSERT INTO user_profile (company_name, website, name, email, image_url, jb_user_id)
+          VALUES ($1, $2, $3, $4, $5, $6)
+      `;
+      const values = [company_name, website, name, email, signedUrl, userId];
+      await executeQuery(insertProfileQuery, values);
+
+      return { success: true };
+  } catch (err) {
+      console.error("Error inserting profile:", err);
+      return { error: "Database error" };
+  }
+}
+
+async function getUserProfileByEmail(email) {
+  try {
+    const query = "SELECT id FROM user_profile WHERE email = $1";
+    const result = await executeQuery(query, [email]);
+    return result[0];  // Return the profile if found
+  } catch (error) {
+    console.error("Error fetching profile by email:", error);
+    return null;
+  }
+}
+
 
 module.exports = {
   jobUpdate,
   getData,
   insertData,
-  deleteData,
-  updateData,
-  getJobData,
+  deleteJob,
+  updateJob,
+  getJobById,
   getuserjobData,
-  insertMail,
   executeQuery,
+  insertProfile,
+  getUserProfileByEmail
 };
