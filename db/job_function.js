@@ -108,6 +108,9 @@ async function getJobById(jobId) {
         jb_jobs.remote,
         jb_jobs.job_link,
         jb_jobs.description,
+        jb_jobs.categories,
+        jb_jobs.level,
+        jb_jobs.compensation
         user_profile.email 
       FROM jb_jobs 
       JOIN user_profile ON jb_jobs.user_profile_id = user_profile.id 
@@ -121,7 +124,6 @@ async function getJobById(jobId) {
   }
 }
 
-
 async function insertData(
   user_profile_id,
   job_title,
@@ -129,20 +131,26 @@ async function insertData(
   commitment,
   remote,
   job_link,
-  description
+  description,
+  categories,
+  level,
+  compensation
 ) {
   try {
     const insertJobQuery = `
-      INSERT INTO jb_jobs (
+        INSERT INTO jb_jobs (
         user_profile_id, 
         job_title, 
         work_loc, 
         commitment, 
         remote, 
         job_link, 
-        description
+        description,
+        categories,
+        level,
+      compensation
       ) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
       RETURNING *`;
     const insertJobValues = [
       user_profile_id,
@@ -152,6 +160,9 @@ async function insertData(
       remote,
       job_link,
       description,
+      categories,
+      level,
+      compensation
     ];
     const insertedJob = await executeQuery(insertJobQuery, insertJobValues);
     return insertedJob[0];
@@ -160,7 +171,6 @@ async function insertData(
     return [];
   }
 }
-
 
 async function deleteJob(jobId) {
   try {
@@ -173,10 +183,8 @@ async function deleteJob(jobId) {
   }
 }
 
-
 async function updateJob(jobId, jobData) {
-  const { job_title, work_loc, commitment, remote, job_link, description } = jobData;
-
+  const { job_title, work_loc, commitment, remote, job_link, description, categories, level, compensation } = jobData;
   try {
     const query = `
       UPDATE jb_jobs
@@ -186,8 +194,11 @@ async function updateJob(jobId, jobData) {
         commitment = $3,
         remote = $4,
         job_link = $5,
-        description = $6
-      WHERE id = $7
+        description = $6,
+        categories = $7,
+        level = $8,
+        compensation = $9
+      WHERE id = $10
       RETURNING *
     `;
     const updatedJob = await executeQuery(query, [
@@ -197,6 +208,9 @@ async function updateJob(jobId, jobData) {
       remote,
       job_link,
       description,
+      categories,
+      level,
+      compensation,
       jobId,
     ]);
     return updatedJob[0];
@@ -206,21 +220,17 @@ async function updateJob(jobId, jobData) {
   }
 }
 
-
 async function insertProfile(company_name, website, name, email, signedUrl) {
   try {
-      // Step 1: Find the user ID from jb_users using email
       const findUserQuery = 'SELECT id FROM jb_users WHERE email = $1';
       const userResult = await executeQuery(findUserQuery, [email]);
 
-      // If no user is found, return an error
       if (userResult.length === 0) {
           return { error: "User not found" };
       }
 
       const userId = userResult[0].id;
 
-      // Step 2: Insert the profile into user_profile
       const insertProfileQuery = `
           INSERT INTO user_profile (company_name, website, name, email, image_url, jb_user_id)
           VALUES ($1, $2, $3, $4, $5, $6)
@@ -239,13 +249,12 @@ async function getUserProfileByEmail(email) {
   try {
     const query = "SELECT id FROM user_profile WHERE email = $1";
     const result = await executeQuery(query, [email]);
-    return result[0];  // Return the profile if found
+    return result[0]; 
   } catch (error) {
     console.error("Error fetching profile by email:", error);
     return null;
   }
 }
-
 
 module.exports = {
   jobUpdate,
