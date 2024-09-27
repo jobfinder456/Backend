@@ -8,16 +8,18 @@ const {
   getuserjobData,
   getUserProfileByEmail
 } = require("../db/job_function");
-const { authMiddleware } = require("../middleware");
+const { authMiddleware } = require("../auth/middleware");
 const router = express.Router();
 const path = require("path");
 require("dotenv").config({ path: path.join(__dirname, "../.env") });
 
 router.use(express.json());
 
-// Helper function to validate required fields
 const validateJobFields = (body) => {
   const {
+    company_name,
+    website,
+    s3_url,
     job_title,
     work_loc,
     commitment,
@@ -27,25 +29,29 @@ const validateJobFields = (body) => {
     categories,
     level,
     compensation,
+    name
   } = body;
 
   if (
+    !company_name||
+    !website||
+    !s3_url||
     !job_title ||
     !work_loc ||
     !commitment ||
-    typeof remote === "undefined" ||  // Ensure remote is boolean or defined
+    typeof remote === "undefined" ||  
     !job_link ||
     !description ||
     !categories ||
     !level ||
-    !compensation
+    !compensation ||
+    !name
   ) {
     return false;
   }
   return true;
 };
 
-// Route to get all jobs with filters
 router.get("/list", async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -62,7 +68,6 @@ router.get("/list", async (req, res) => {
   }
 });
 
-// Get a job by ID
 router.get("/jobs/:id", async (req, res) => {
   const jobId = req.params.id;
 
@@ -77,35 +82,41 @@ router.get("/jobs/:id", async (req, res) => {
   }
 });
 
-// Insert a new job
-router.post("/insert", async (req, res) => {
+router.post("/insert", authMiddleware, async (req, res) => {
   try {
     const {
+      company_name,
+      website,
+      s3_url,
       job_title,
       work_loc,
       commitment,
       remote,
       job_link,
       description,
-      email,
       categories,
       level,
       compensation,
+      name,
+      email
     } = req.body;
+    
+    const user_email = req.email
 
-    // Validate required fields
     if (!validateJobFields(req.body)) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    // Check if the profile exists for the given email
-    const profile = await getUserProfileByEmail(email);
+    const profile = await getUserProfileByEmail(user_email);
     if (!profile) {
       return res.status(404).json({ error: "Profile not found" });
     }
 
     await insertData(
       profile.id,
+      company_name,
+      website,
+      s3_url,
       job_title,
       work_loc,
       commitment,
@@ -114,7 +125,9 @@ router.post("/insert", async (req, res) => {
       description,
       categories,
       level,
-      compensation
+      compensation,
+      name,
+      email
     );
     res.status(201).json({ message: "Job inserted successfully" });
   } catch (error) {
@@ -122,11 +135,9 @@ router.post("/insert", async (req, res) => {
   }
 });
 
-// Update an existing job by ID
-router.put("/jobs/:id", async (req, res) => {
+router.put("/jobs/:id", authMiddleware, async (req, res) => {
   const jobId = req.params.id;
 
-  // Validate required fields for update
   if (!validateJobFields(req.body)) {
     return res.status(400).json({ error: "Missing required fields" });
   }
@@ -143,8 +154,7 @@ router.put("/jobs/:id", async (req, res) => {
   }
 });
 
-// Delete a job by ID
-router.delete("/jobs/:id", async (req, res) => {
+router.delete("/jobs/:id", authMiddleware, async (req, res) => {
   const jobId = req.params.id;
   try {
     const deleted = await deleteJob(jobId);
@@ -157,7 +167,6 @@ router.delete("/jobs/:id", async (req, res) => {
   }
 });
 
-// Route to get jobs for a specific user (based on email)
 router.post("/users-list", authMiddleware, async (req, res) => {
   try {
     const { email } = req.body;
@@ -168,7 +177,6 @@ router.post("/users-list", authMiddleware, async (req, res) => {
   }
 });
 
-// Error handling middleware
 function handleError(res, error) {
   console.error(error);
   res.status(500).json({ error: "Internal server error" });

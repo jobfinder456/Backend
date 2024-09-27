@@ -126,6 +126,9 @@ async function getJobById(jobId) {
 
 async function insertData(
   user_profile_id,
+  company_name,
+  website,
+  s3_url,
   job_title,
   work_loc,
   commitment,
@@ -134,11 +137,13 @@ async function insertData(
   description,
   categories,
   level,
-  compensation
+  compensation,
+  name,
+  email
 ) {
   try {
     const insertJobQuery = `
-        INSERT INTO jb_jobs (
+      INSERT INTO jb_jobs (
         user_profile_id, 
         job_title, 
         work_loc, 
@@ -148,10 +153,16 @@ async function insertData(
         description,
         categories,
         level,
-      compensation
+        compensation,
+        company_name,
+        website,
+        s3_url,
+        name,
+        email
       ) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) 
       RETURNING *`;
+    
     const insertJobValues = [
       user_profile_id,
       job_title,
@@ -162,15 +173,22 @@ async function insertData(
       description,
       categories,
       level,
-      compensation
+      compensation,
+      company_name,
+      website,
+      s3_url,
+      name,
+      email
     ];
+
     const insertedJob = await executeQuery(insertJobQuery, insertJobValues);
-    return insertedJob[0];
+    return insertedJob[0]; 
   } catch (error) {
     console.error("Error inserting job data:", error);
-    return [];
+    return []; 
   }
 }
+
 
 async function deleteJob(jobId) {
   try {
