@@ -6,7 +6,6 @@ const {
   deleteJob,
   getJobById,
   getuserjobData,
-  getUserProfileByEmail
 } = require("../db/job_function");
 const { authMiddleware } = require("../auth/middleware");
 const router = express.Router();
@@ -17,9 +16,6 @@ router.use(express.json());
 
 const validateJobFields = (body) => {
   const {
-    company_name,
-    website,
-    s3_url,
     job_title,
     work_loc,
     commitment,
@@ -33,9 +29,6 @@ const validateJobFields = (body) => {
   } = body;
 
   if (
-    !company_name||
-    !website||
-    !s3_url||
     !job_title ||
     !work_loc ||
     !commitment ||
@@ -82,12 +75,9 @@ router.get("/jobs/:id", async (req, res) => {
   }
 });
 
-router.post("/insert", authMiddleware, async (req, res) => {
+router.post("/insert", async (req, res) => {
   try {
     const {
-      company_name,
-      website,
-      s3_url,
       job_title,
       work_loc,
       commitment,
@@ -101,22 +91,13 @@ router.post("/insert", authMiddleware, async (req, res) => {
       email
     } = req.body;
     
-    const user_email = req.email
+    const user_email = "nikhilchopra1705@gmail.com"
 
     if (!validateJobFields(req.body)) {
       return res.status(400).json({ error: "Missing required fields" });
     }
-
-    const profile = await getUserProfileByEmail(user_email);
-    if (!profile) {
-      return res.status(404).json({ error: "Profile not found" });
-    }
-
+    
     await insertData(
-      profile.id,
-      company_name,
-      website,
-      s3_url,
       job_title,
       work_loc,
       commitment,
@@ -127,7 +108,8 @@ router.post("/insert", authMiddleware, async (req, res) => {
       level,
       compensation,
       name,
-      email
+      email,
+      user_email
     );
     res.status(201).json({ message: "Job inserted successfully" });
   } catch (error) {
@@ -135,7 +117,7 @@ router.post("/insert", authMiddleware, async (req, res) => {
   }
 });
 
-router.put("/jobs/:id", authMiddleware, async (req, res) => {
+router.put("/jobs/:id", async (req, res) => {
   const jobId = req.params.id;
 
   if (!validateJobFields(req.body)) {
@@ -154,7 +136,7 @@ router.put("/jobs/:id", authMiddleware, async (req, res) => {
   }
 });
 
-router.delete("/jobs/:id", authMiddleware, async (req, res) => {
+router.delete("/jobs/:id", async (req, res) => {
   const jobId = req.params.id;
   try {
     const deleted = await deleteJob(jobId);
@@ -167,7 +149,7 @@ router.delete("/jobs/:id", authMiddleware, async (req, res) => {
   }
 });
 
-router.post("/users-list", authMiddleware, async (req, res) => {
+router.post("/users-list", async (req, res) => {
   try {
     const { email } = req.body;
     const all = await getuserjobData(email);
