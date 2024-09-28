@@ -88,16 +88,16 @@ router.post("/insert", async (req, res) => {
       level,
       compensation,
       name,
-      email
+      email,
+      company_id 
     } = req.body;
-    
-    const user_email = "nikhilchopra1705@gmail.com"
 
     if (!validateJobFields(req.body)) {
       return res.status(400).json({ error: "Missing required fields" });
     }
-    
+
     await insertData(
+      company_id,  
       job_title,
       work_loc,
       commitment,
@@ -108,14 +108,15 @@ router.post("/insert", async (req, res) => {
       level,
       compensation,
       name,
-      email,
-      user_email
+      email
     );
+    
     res.status(201).json({ message: "Job inserted successfully" });
   } catch (error) {
     handleError(res, error);
   }
 });
+
 
 router.put("/jobs/:id", async (req, res) => {
   const jobId = req.params.id;

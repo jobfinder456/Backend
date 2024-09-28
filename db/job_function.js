@@ -124,6 +124,7 @@ async function getJobById(jobId) {
 }
 
 async function insertData(
+  user_profile_id,
   job_title,
   work_loc,
   commitment,
@@ -134,8 +135,7 @@ async function insertData(
   level,
   compensation,
   name,
-  email,
-  user_email
+  email
 ) {
   try {
     const insertJobQuery = `
@@ -153,17 +153,12 @@ async function insertData(
         name,
         email
       ) 
-      VALUES (
-        (SELECT user_profile.id FROM user_profile 
-         JOIN jb_users ON user_profile.jb_user_id = jb_users.id 
-         WHERE jb_users.email = $1), 
-        $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
-      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING *
     `;
-    
+
     const insertJobValues = [
-      user_email,
+      user_profile_id,
       job_title,
       work_loc,
       commitment,
@@ -178,12 +173,31 @@ async function insertData(
     ];
 
     const insertedJob = await executeQuery(insertJobQuery, insertJobValues);
-    return insertedJob[0]; 
+
+    if (insertedJob.length === 0) {
+      return null;
+    }
+
+    const jobDetailsQuery = `
+      SELECT 
+        jb_jobs.*,
+        user_profile.company_name, 
+        user_profile.website, 
+        user_profile.image_url
+      FROM jb_jobs
+      JOIN user_profile ON jb_jobs.user_profile_id = user_profile.id
+      WHERE jb_jobs.id = $1
+    `;
+
+    const jobDetails = await executeQuery(jobDetailsQuery, [insertedJob[0].id]);
+
+    return jobDetails[0];  
   } catch (error) {
     console.error("Error inserting job data:", error);
-    return [];
+    return null;
   }
 }
+
 
 
 async function updateJob(jobId, jobData) {
