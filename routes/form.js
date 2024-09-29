@@ -11,6 +11,7 @@ const {
 } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const { Pool } = require("pg");
+const { authMiddleware } = require("../auth/middleware");
 
 
 router.use(express.json());
@@ -28,18 +29,6 @@ async function executeQuery(query, values = []) {
   } finally {
     client.release();
   }
-}
-
-function keyFromFileLink(fileLink) {
-  const s3 = new S3Client({
-    credentials: {
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    },
-    region: process.env.AWS_REGION,
-  });
-  const s3UrlPrefix = `https://${process.env.BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/`;
-  return fileLink.replace(s3UrlPrefix, "");
 }
 
 async function createPreSignedPost(key, contentType) {
@@ -64,28 +53,13 @@ async function createPreSignedPost(key, contentType) {
   return { fileLink, signedUrl };
 }
 
-router.post("/profile", async (req, res) => {
+router.post("/profile", authMiddleware, async (req, res) => {
   const { company_name, website, fileLink } = req.body;
-  const email = "nikhilchopra1705@gmail.com";
+  const email = req.email;
   if (!company_name || !website || !fileLink) {
     return res.status(400).json({ error: "Missing required fields" });
   }
-  const s3 = new S3Client({
-    credentials: {
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    },
-    region: process.env.AWS_REGION,
-  });
-  const key = keyFromFileLink(fileLink);
-  console.log("here is the new key", key);
-  try {
-    /* const command = new HeadObjectCommand({
-            Bucket: process.env.BUCKET_NAME,
-            Key: key,
-        });
-        await s3.send(command);
-        */
+  try{
     const result = await insertProfile(email, company_name, website, fileLink);
     if (result.success) {
       return res.status(201).json({
@@ -100,11 +74,11 @@ router.post("/profile", async (req, res) => {
   }
 });
 
-router.get("/profile", async (req, res) => {
+router.get("/profile", authMiddleware, async (req, res) => {
   try {
     const query = `SELECT * FROM user_profile`;
     const profiles = await executeQuery(query);
-
+    
     console.log(profiles);
     res.status(200).send(profiles);
   } catch (error) {
@@ -116,7 +90,7 @@ router.get("/profile", async (req, res) => {
   }
 });
 
-router.post("/s3logo", async (req, res) => {
+router.post("/s3logo", authMiddleware, async (req, res) => {
   try {
     const { contentType } = req.body;
 
