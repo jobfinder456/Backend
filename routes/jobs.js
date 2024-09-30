@@ -150,9 +150,9 @@ router.delete("/jobs/:id", authMiddleware, async (req, res) => {
   }
 });
 
-router.post("/users-list", authMiddleware,async (req, res) => {
+router.get("/jobs", authMiddleware,async (req, res) => {
   try {
-    const { email } = req.body;
+    const email = req.email;
     const all = await getuserjobData(email);
     res.status(200).json({ all });
   } catch (error) {

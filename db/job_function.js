@@ -32,7 +32,6 @@ async function jobUpdate(jobIds) {
 
 async function getuserjobData(email) {
   try {
-    // Query to join jb_users and jb_jobs through user_profile
     const query = `
       SELECT 
         jb_jobs.*
