@@ -45,7 +45,7 @@ async function createPreSignedPost(key, contentType) {
     Key: `images/${key}`,
     ContentType: contentType,
   });
-  const fileLink = `https://${process.env.BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+  const fileLink = `https://${process.env.BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/images/${key}`;
   const signedUrl = await getSignedUrl(s3, command, {
     expiresIn: 5 * 60,
   });
@@ -75,14 +75,40 @@ router.post("/profile", authMiddleware, async (req, res) => {
 });
 
 router.get("/profile", authMiddleware, async (req, res) => {
+  const email = req.email; 
+  
   try {
-    const query = `SELECT * FROM user_profile`;
-    const profiles = await executeQuery(query);
+    const query = `
+      SELECT 
+        user_profile.id AS user_profile_id, 
+        user_profile.company_name, 
+        user_profile.website, 
+        user_profile.image_url, 
+        jb_jobs.job_title, 
+        jb_jobs.description, 
+        jb_jobs.work_loc, 
+        jb_jobs.commitment, 
+        jb_jobs.remote, 
+        jb_jobs.level, 
+        jb_jobs.compensation
+      FROM 
+        jb_users
+      JOIN 
+        user_profile 
+        ON jb_users.id = user_profile.jb_user_id
+      LEFT JOIN 
+        jb_jobs 
+        ON user_profile.id = jb_jobs.user_profile_id
+      WHERE 
+        jb_users.email = $1
+    `;
+    
+    const profiles = await executeQuery(query, [email]);
     
     console.log(profiles);
     res.status(200).send(profiles);
   } catch (error) {
-    console.error("Error fetching profiles:", error)
+    console.error("Error fetching profiles:", error);
     res.status(500).send({
       status: "error",
       message: "Failed to get the profiles",
