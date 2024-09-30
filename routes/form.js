@@ -80,25 +80,15 @@ router.get("/profile", authMiddleware, async (req, res) => {
   try {
     const query = `
       SELECT 
-        user_profile.id AS user_profile_id, 
+        user_profile.id, 
         user_profile.company_name, 
         user_profile.website, 
-        user_profile.image_url, 
-        jb_jobs.job_title, 
-        jb_jobs.description, 
-        jb_jobs.work_loc, 
-        jb_jobs.commitment, 
-        jb_jobs.remote, 
-        jb_jobs.level, 
-        jb_jobs.compensation
+        user_profile.image_url
       FROM 
         jb_users
       JOIN 
         user_profile 
         ON jb_users.id = user_profile.jb_user_id
-      LEFT JOIN 
-        jb_jobs 
-        ON user_profile.id = jb_jobs.user_profile_id
       WHERE 
         jb_users.email = $1
     `;
@@ -115,6 +105,7 @@ router.get("/profile", authMiddleware, async (req, res) => {
     });
   }
 });
+
 
 router.post("/s3logo", authMiddleware, async (req, res) => {
   try {
