@@ -4,8 +4,11 @@ const cors = require("cors");
 const job = require("./routes/jobs");
 const profile = require("./routes/form");
 const pay = require("./routes/job-pay");
+const cookieParser = require('cookie-parser');
 
 app.use(express.json());
+app.use(cookieParser());
+
 
 app.use(
   cors({
