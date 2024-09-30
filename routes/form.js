@@ -42,7 +42,7 @@ async function createPreSignedPost(key, contentType) {
   });
   const command = new PutObjectCommand({
     Bucket: process.env.BUCKET_NAME,
-    Key: key,
+    Key: `images/${key}`,
     ContentType: contentType,
   });
   const fileLink = `https://${process.env.BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
