@@ -52,14 +52,19 @@ router.get("/list", async (req, res) => {
     const searchTerm = req.query.search || "";
     const location = req.query.loc || "";
     const remote = req.query.remote ? req.query.remote === "true" : undefined;
+    const categories = req.query.categories || ""; 
+    const level = req.query.level || ""; 
+    const compensation = req.query.compensation || ""; 
+    const commitment = req.query.commitment || "";
     const offset = (page - 1) * limit;
 
-    const all = await getData(offset, limit, searchTerm, location, remote);
+    const all = await getData(offset, limit, searchTerm, location, remote, categories, level, compensation, commitment);
     res.status(200).json({ all });
   } catch (error) {
     handleError(res, error);
   }
 });
+
 
 router.get("/jobs/:id", async (req, res) => {
   const jobId = req.params.id;
