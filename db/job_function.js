@@ -56,7 +56,7 @@ async function getuserjobData(email) {
 }
 
 
-async function getData(offset, limit, searchTerm, location, remote) {
+async function getData(offset, limit, searchTerm, location, remote, categories, level, compensation) {
   try {
     let query = `
       SELECT 
@@ -87,6 +87,21 @@ async function getData(offset, limit, searchTerm, location, remote) {
       params.push(`%${location}%`);
     }
 
+    if (categories) {
+      conditions.push(`JB_JOBS.categories ILIKE $${params.length + 1}`);
+      params.push(`%${categories}%`);
+    }
+
+    if (level) {
+      conditions.push(`JB_JOBS.level ILIKE $${params.length + 1}`);
+      params.push(`%${level}%`);
+    }
+
+    if (compensation) {
+      conditions.push(`JB_JOBS.compensation = $${params.length + 1}`);
+      params.push(compensation);
+    }
+
     if (conditions.length > 0) {
       query += ` WHERE ` + conditions.join(" AND ");
     }
@@ -101,6 +116,7 @@ async function getData(offset, limit, searchTerm, location, remote) {
     return [];
   }
 }
+
 
 async function getJobById(jobId) {
   try {
