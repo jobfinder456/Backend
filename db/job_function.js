@@ -233,7 +233,7 @@ async function insertData(
 
 
 async function updateJob(jobId, jobData) {
-  const { job_title, work_loc, commitment, remote, job_link, description, categories, level, compensation } = jobData;
+  const { job_title, work_loc, commitment, remote, job_link, description, categories, level, compensation, user_profile_id } = jobData;
   try {
     const query = `
       UPDATE jb_jobs
@@ -246,8 +246,9 @@ async function updateJob(jobId, jobData) {
         description = $6,
         categories = $7,
         level = $8,
-        compensation = $9
-      WHERE id = $10
+        compensation = $9,
+        user_profile_id = $10
+      WHERE id = $11
       RETURNING *
     `;
     
@@ -261,6 +262,7 @@ async function updateJob(jobId, jobData) {
       categories,
       level,
       compensation,
+      user_profile_id,
       jobId
     ]);
     
