@@ -55,9 +55,10 @@ router.get("/list", async (req, res) => {
     const categories = req.query.categories || ""; 
     const level = req.query.level || ""; 
     const compensation = req.query.compensation || ""; 
+    const commitment = req.query.commitment || "";
     const offset = (page - 1) * limit;
 
-    const all = await getData(offset, limit, searchTerm, location, remote, categories, level, compensation);
+    const all = await getData(offset, limit, searchTerm, location, remote, categories, level, compensation, commitment);
     res.status(200).json({ all });
   } catch (error) {
     handleError(res, error);
