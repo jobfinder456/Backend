@@ -57,6 +57,7 @@ async function getuserjobData(email) {
 
 
 async function getData(offset, limit, searchTerm, location, remote, categories, level, compensation, commitment) {
+  console.log("offset:", offset, "limit:", limit, "searchTerm:", searchTerm, "loc:", location, "remote:", remote, "categories:", categories, "level:", level, "compensation:", compensation, "commit:", commitment);
   try {
     let query = `
       SELECT 
@@ -69,69 +70,66 @@ async function getData(offset, limit, searchTerm, location, remote, categories, 
         ON JB_JOBS.user_profile_id = user_profile.id
     `;
     
-    let conditions = [`JB_JOBS.is_ok = false`]; // Default condition
+    let conditions = [`JB_JOBS.is_ok = false`]; 
     let params = [];
 
-    // Fuzzy search for job title
     if (searchTerm) {
-      conditions.push(`JB_JOBS.job_title ILIKE $${params.length + 1} OR
-                       JB_JOBS.job_title % $${params.length + 2}`);
-      params.push(`%${searchTerm}%`, searchTerm); // Add fuzzy match
+      conditions.push(`JB_JOBS.job_title ILIKE $${params.length + 1} `);
+      params.push(`%${searchTerm}%`); 
     }
 
-    // Add remote filter
     if (remote === true) {
-      conditions.push(`JB_JOBS.remote = $${params.length + 1}`);
-      params.push(remote);
-    }
-
-    // Add location filter (only if remote is not true)
-    if (location && remote !== true) {
+      if (location) {
+        // Check for both remote and location
+        conditions.push(`JB_JOBS.remote = true AND JB_JOBS.work_loc ILIKE $${params.length + 1}`);
+        params.push(`%${location}%`);
+      } else {
+        // If only remote is true, no location specified
+        conditions.push(`JB_JOBS.remote = $${params.length + 1}`);
+        params.push(remote);
+      }
+    } else if (location) {
+      // If remote is not true but location is provided
       conditions.push(`JB_JOBS.work_loc ILIKE $${params.length + 1}`);
       params.push(`%${location}%`);
     }
 
-    // Add categories filter
     if (categories) {
       conditions.push(`JB_JOBS.categories ILIKE $${params.length + 1}`);
       params.push(`%${categories}%`);
     }
 
-    // Add level filter
     if (level) {
       conditions.push(`JB_JOBS.level ILIKE $${params.length + 1}`);
       params.push(`%${level}%`);
     }
 
-    // Add compensation filter (ensure numeric range if necessary)
     if (compensation) {
       conditions.push(`JB_JOBS.compensation = $${params.length + 1}`);
       params.push(compensation);
     }
 
-    // Add commitment filter
     if (commitment) {
       conditions.push(`JB_JOBS.commitment ILIKE $${params.length + 1}`);
       params.push(`%${commitment}%`);
     }
 
-    // Apply conditions if any exist
     if (conditions.length > 0) {
       query += ` WHERE ` + conditions.join(" AND ");
     }
 
-    // Pagination: OFFSET and LIMIT
     query += ` OFFSET $${params.length + 1} LIMIT $${params.length + 2}`;
     params.push(offset, limit);
 
-    // Execute the query with the provided parameters
     const result = await executeQuery(query, params);
+    console.log(result);
     return result;
   } catch (error) {
     console.error("Error executing query:", error);
     return [];
   }
 }
+
 
 
 
