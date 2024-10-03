@@ -8,12 +8,12 @@ const cookieParser = require('cookie-parser');
 
 app.use(express.json());
 app.use(cookieParser());
-
+app.set("trust proxy", 1);
 
 app.use(
   cors({
     credentials: true,
-    origin: "http://localhost:3000",
+    origin: "https://getjobs.today",
   })
 );
 
