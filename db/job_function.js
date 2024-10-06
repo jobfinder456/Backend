@@ -34,7 +34,7 @@ async function getuserjobData(email) {
   try {
     const query = `
       SELECT 
-        jb_jobs.*
+      jb_jobs.*
       FROM jb_users
       JOIN user_profile ON jb_users.id = user_profile.jb_user_id
       JOIN jb_jobs ON user_profile.id = jb_jobs.user_profile_id
@@ -46,7 +46,6 @@ async function getuserjobData(email) {
     if (jobResult.length === 0) {
       return { jobResult: [] };
     }
-
     // Return only the job data
     return { jobResult };
   } catch (error) {
