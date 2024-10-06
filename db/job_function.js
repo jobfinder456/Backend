@@ -69,7 +69,7 @@ async function getData(offset, limit, searchTerm, location, remote, categories, 
         ON JB_JOBS.user_profile_id = user_profile.id
     `;
     
-    let conditions = [`JB_JOBS.is_ok = false`]; 
+    let conditions = [`JB_JOBS.is_ok = true`]; 
     let params = [];
 
     if (searchTerm) {
