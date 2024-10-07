@@ -17,6 +17,30 @@ async function executeQuery(query, values = []) {
   }
 }
 
+async function updateJobStatus() {
+  const query = `
+    UPDATE jb_jobs 
+    SET is_ok = false 
+    WHERE is_ok = true 
+    AND last_update < (CURRENT_DATE - INTERVAL '31 days')
+    RETURNING *;
+  `;
+
+  try {
+    const result = await executeQuery(query);
+    console.log("Updated job statuses:", result);
+    return result;
+  } catch (error) {
+    console.error("Error updating job statuses:", error);
+    return null;
+  }
+}
+
+cron.schedule("* * * * *", async () => {
+  console.log("Running daily job status check...");
+  await updateJobStatus();
+});
+
 async function jobUpdate(jobIds) {
   const queryText =
     "UPDATE jb_jobs SET is_ok = TRUE, last_update = CURRENT_DATE WHERE id = $1";

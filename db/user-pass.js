@@ -38,8 +38,6 @@ async function register(email, password) {
   }
 }
 
-
-
 module.exports = {
   register
 };

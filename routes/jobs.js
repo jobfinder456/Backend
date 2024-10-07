@@ -23,9 +23,7 @@ const validateJobFields = (body) => {
     job_link,
     description,
     categories,
-    level,
-    compensation,
-    name
+    level
   } = body;
 
   if (
@@ -36,9 +34,7 @@ const validateJobFields = (body) => {
     !job_link ||
     !description ||
     !categories ||
-    !level ||
-    !compensation ||
-    !name
+    !level 
   ) {
     return false;
   }
