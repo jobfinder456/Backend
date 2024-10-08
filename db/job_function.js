@@ -36,7 +36,7 @@ async function updateJobStatus() {
   }
 }
 
-cron.schedule("* * * * *", async () => {
+cron.schedule("0 0 * * *", async () => {
   console.log("Running daily job status check...");
   await updateJobStatus();
 });
