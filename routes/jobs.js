@@ -91,7 +91,7 @@ router.post("/insert", authMiddleware, async (req, res) => {
       compensation,
       name,
       email,
-      user_profile_id 
+      company_profile_id 
     } = req.body;
 
     if (!validateJobFields(req.body)) {
@@ -99,7 +99,7 @@ router.post("/insert", authMiddleware, async (req, res) => {
     }
 
     await insertData(
-      user_profile_id,  
+      company_profile_id,  
       job_title,
       work_loc,
       commitment,

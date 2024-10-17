@@ -1,4 +1,4 @@
-const { Pool } = require("pg");
+const { Pool } = require("pg"); 
 const cron = require("node-cron");
 const path = require("path");
 
@@ -60,8 +60,8 @@ async function getuserjobData(email) {
       SELECT 
       jb_jobs.*
       FROM jb_users
-      JOIN user_profile ON jb_users.id = user_profile.jb_user_id
-      JOIN jb_jobs ON user_profile.id = jb_jobs.user_profile_id
+      JOIN company_profile ON jb_users.id = company_profile.jb_user_id
+      JOIN jb_jobs ON company_profile.id = jb_jobs.company_profile_id
       WHERE jb_users.email = $1
     `;
 
@@ -70,7 +70,6 @@ async function getuserjobData(email) {
     if (jobResult.length === 0) {
       return { jobResult: [] };
     }
-    // Return only the job data
     return { jobResult };
   } catch (error) {
     console.error("Error executing query:", error);
@@ -85,12 +84,12 @@ async function getData(offset, limit, searchTerm, location, remote, categories, 
     let query = `
       SELECT 
         JB_JOBS.*, 
-        user_profile.company_name, 
-        user_profile.website, 
-        user_profile.image_url
+        company_profile.company_name, 
+        company_profile.website, 
+        company_profile.image_url
       FROM JB_JOBS
-      JOIN user_profile 
-        ON JB_JOBS.user_profile_id = user_profile.id
+      JOIN company_profile 
+        ON JB_JOBS.company_profile_id = company_profile.id
     `;
     
     let conditions = [`JB_JOBS.is_ok = true`]; 
@@ -103,16 +102,13 @@ async function getData(offset, limit, searchTerm, location, remote, categories, 
 
     if (remote === true) {
       if (location) {
-        // Check for both remote and location
         conditions.push(`JB_JOBS.remote = true AND JB_JOBS.work_loc ILIKE $${params.length + 1}`);
         params.push(`%${location}%`);
       } else {
-        // If only remote is true, no location specified
         conditions.push(`JB_JOBS.remote = $${params.length + 1}`);
         params.push(remote);
       }
     } else if (location) {
-      // If remote is not true but location is provided
       conditions.push(`JB_JOBS.work_loc ILIKE $${params.length + 1}`);
       params.push(`%${location}%`);
     }
@@ -161,11 +157,11 @@ async function getJobById(jobId) {
     const query = `
       SELECT 
         JB_JOBS.*,
-        user_profile.company_name, 
-        user_profile.website, 
-        user_profile.image_url
+        company_profile.company_name, 
+        company_profile.website, 
+        company_profile.image_url
       FROM jb_jobs 
-      JOIN user_profile ON jb_jobs.user_profile_id = user_profile.id 
+      JOIN company_profile ON jb_jobs.company_profile_id = company_profile.id 
       WHERE jb_jobs.id = $1
     `;
     const job = await executeQuery(query, [jobId]);
@@ -177,7 +173,7 @@ async function getJobById(jobId) {
 }
 
 async function insertData(
-  user_profile_id,
+  company_profile_id,
   job_title,
   work_loc,
   commitment,
@@ -193,7 +189,7 @@ async function insertData(
   try {
     const insertJobQuery = `
       INSERT INTO jb_jobs (
-        user_profile_id, 
+        company_profile_id, 
         job_title, 
         work_loc, 
         commitment, 
@@ -211,7 +207,7 @@ async function insertData(
     `;
 
     const insertJobValues = [
-      user_profile_id,
+      company_profile_id,
       job_title,
       work_loc,
       commitment,
@@ -234,11 +230,11 @@ async function insertData(
     const jobDetailsQuery = `
       SELECT 
         jb_jobs.*,
-        user_profile.company_name, 
-        user_profile.website, 
-        user_profile.image_url
+        company_profile.company_name, 
+        company_profile.website, 
+        company_profile.image_url
       FROM jb_jobs
-      JOIN user_profile ON jb_jobs.user_profile_id = user_profile.id
+      JOIN company_profile ON jb_jobs.company_profile_id = company_profile.id
       WHERE jb_jobs.id = $1
     `;
 
@@ -254,7 +250,7 @@ async function insertData(
 
 
 async function updateJob(jobId, jobData) {
-  const { job_title, work_loc, commitment, remote, job_link, description, categories, level, compensation, user_profile_id } = jobData;
+  const { job_title, work_loc, commitment, remote, job_link, description, categories, level, compensation, company_profile_id } = jobData;
   try {
     const query = `
       UPDATE jb_jobs
@@ -268,7 +264,7 @@ async function updateJob(jobId, jobData) {
         categories = $7,
         level = $8,
         compensation = $9,
-        user_profile_id = $10
+        company_profile_id = $10
       WHERE id = $11
       RETURNING *
     `;
@@ -283,18 +279,18 @@ async function updateJob(jobId, jobData) {
       categories,
       level,
       compensation,
-      user_profile_id,
+      company_profile_id,
       jobId
     ]);
     
     if (updatedJob.length > 0) {
       const profileQuery = `
         SELECT 
-          user_profile.company_name, 
-          user_profile.website, 
-          user_profile.image_url
+          company_profile.company_name, 
+          company_profile.website, 
+          company_profile.image_url
         FROM jb_jobs
-        JOIN user_profile ON jb_jobs.user_profile_id = user_profile.id
+        JOIN company_profile ON jb_jobs.company_profile_id = company_profile.id
         WHERE jb_jobs.id = $1
       `;
       
@@ -322,60 +318,24 @@ async function insertProfile(email,company_name, website, fileLink) {
       }
       const userId = userResult[0].id;
       const insertProfileQuery = `
-          INSERT INTO user_profile (company_name, website, image_url, jb_user_id)
+          INSERT INTO company_profile (company_name, website, image_url, jb_user_id)
           VALUES ($1, $2, $3, $4)
           `;
       const values = [company_name, website, fileLink, userId];
       await executeQuery(insertProfileQuery, values);
       return { success: true };
   } catch (err) {
-      console.error("Error inserting profile:", err);
-      return { error: "Database error" };
+      console.error("Error inserting profile", err);
+      return { error: err.message };
   }
 }
-
-async function deleteJob(jobId) {
-  try {
-    const fetchQuery = `
-      SELECT 
-        jb_jobs.job_title,
-        jb_jobs.work_loc,
-        user_profile.company_name, 
-        user_profile.website, 
-        user_profile.image_url
-      FROM jb_jobs 
-      JOIN user_profile ON jb_jobs.user_profile_id = user_profile.id
-      WHERE jb_jobs.id = $1
-    `;
-    const jobDetails = await executeQuery(fetchQuery, [jobId]);
-
-    if (jobDetails.length === 0) {
-      return null; 
-    }
-
-    const deleteQuery = `
-      DELETE FROM jb_jobs
-      WHERE id = $1
-      RETURNING *
-    `;
-     await executeQuery(deleteQuery, [jobId]);
-
-    return jobDetails[0]; 
-  } catch (error) {
-    console.error("Error deleting job:", error);
-    return null;
-  }
-}
-
 
 module.exports = {
   jobUpdate,
-  getData,
-  insertData,
-  deleteJob,
-  updateJob,
-  getJobById,
   getuserjobData,
-  executeQuery,
+  getData,
+  getJobById,
+  insertData,
+  updateJob,
   insertProfile
 };

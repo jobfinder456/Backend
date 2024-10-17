@@ -32,7 +32,6 @@ async function executeQuery(query, values = []) {
 }
 
 async function createPreSignedPost(key, contentType) {
-  console.log(key, " --- ", contentType);
   const s3 = new S3Client({
     credentials: {
       accessKeyId: process.env.AWS_ACCESS_KEY_ID,
@@ -80,14 +79,14 @@ router.get("/profile", authMiddleware, async (req, res) => {
   try {
     const query = `
       SELECT 
-        user_profile.id, 
-        user_profile.company_name, 
-        user_profile.website, 
-        user_profile.image_url
+        company_profile.id, 
+        company_profile.company_name, 
+        company_profile.website, 
+        company_profile.image_url
       FROM 
         jb_users
       JOIN 
-        user_profile 
+        company_profile 
         ON jb_users.id = user_profile.jb_user_id
       WHERE 
         jb_users.email = $1
