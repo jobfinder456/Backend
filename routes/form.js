@@ -6,8 +6,7 @@ const { insertProfile } = require("../db/job_function");
 const { v4: uuidv4 } = require("uuid");
 const {
   PutObjectCommand,
-  S3Client,
-  HeadObjectCommand,
+  S3Client
 } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const { Pool } = require("pg");
@@ -87,7 +86,7 @@ router.get("/profile", authMiddleware, async (req, res) => {
         jb_users
       JOIN 
         company_profile 
-        ON jb_users.id = user_profile.jb_user_id
+        ON jb_users.id = company_profile.jb_user_id
       WHERE 
         jb_users.email = $1
     `;

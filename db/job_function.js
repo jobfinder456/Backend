@@ -58,7 +58,8 @@ async function getuserjobData(email) {
   try {
     const query = `
       SELECT 
-      jb_jobs.*
+        jb_jobs.*,
+        company_profile.company_name AS company_name
       FROM jb_users
       JOIN company_profile ON jb_users.id = company_profile.jb_user_id
       JOIN jb_jobs ON company_profile.id = jb_jobs.company_profile_id
@@ -76,6 +77,7 @@ async function getuserjobData(email) {
     return { jobResult: [] };
   }
 }
+
 
 
 async function getData(offset, limit, searchTerm, location, remote, categories, level, compensation, commitment) {
