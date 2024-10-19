@@ -4,7 +4,11 @@ const path = require("path");
 
 require("dotenv").config({ path: path.join(__dirname, "../.env") });
 const pool = new Pool({
-  connectionString: process.env.DB_CONNECTION_STRING,
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT,
 });
 
 async function executeQuery(query, values = []) {
@@ -77,8 +81,6 @@ async function getuserjobData(email) {
     return { jobResult: [] };
   }
 }
-
-
 
 async function getData(offset, limit, searchTerm, location, remote, categories, level, compensation, commitment) {
   console.log("offset:", offset, "limit:", limit, "searchTerm:", searchTerm, "loc:", location, "remote:", remote, "categories:", categories, "level:", level, "compensation:", compensation, "commit:", commitment);
