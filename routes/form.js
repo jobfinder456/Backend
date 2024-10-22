@@ -96,8 +96,6 @@ router.get("/profile", authMiddleware, async (req, res) => {
     `;
     
     const profiles = await executeQuery(query, [email]);
-    
-    console.log(profiles);
     res.status(200).send(profiles);
   } catch (error) {
     console.error("Error fetching profiles:", error);

@@ -32,7 +32,6 @@ async function updateJobStatus() {
 
   try {
     const result = await executeQuery(query);
-    console.log("Updated job statuses:", result);
     return result;
   } catch (error) {
     console.error("Error updating job statuses:", error);
@@ -41,7 +40,6 @@ async function updateJobStatus() {
 }
 
 cron.schedule("0 0 * * *", async () => {
-  console.log("Running daily job status check...");
   await updateJobStatus();
 });
 
@@ -83,7 +81,6 @@ async function getuserjobData(email) {
 }
 
 async function getData(offset, limit, searchTerm, location, remote, categories, level, compensation, commitment) {
-  console.log("offset:", offset, "limit:", limit, "searchTerm:", searchTerm, "loc:", location, "remote:", remote, "categories:", categories, "level:", level, "compensation:", compensation, "commit:", commitment);
   try {
     let query = `
       SELECT 
@@ -145,16 +142,12 @@ async function getData(offset, limit, searchTerm, location, remote, categories, 
     params.push(offset, limit);
 
     const result = await executeQuery(query, params);
-    console.log(result);
     return result;
   } catch (error) {
     console.error("Error executing query:", error);
     return [];
   }
 }
-
-
-
 
 async function getJobById(jobId) {
   try {
@@ -190,6 +183,18 @@ async function insertData(
   name,
   email
 ) {
+  console.log(company_profile_id,
+    job_title,
+    work_loc,
+    commitment,
+    remote,
+    job_link,
+    description,
+    categories,
+    level,
+    compensation,
+    name,
+    email)
   try {
     const insertJobQuery = `
       INSERT INTO jb_jobs (
@@ -243,15 +248,13 @@ async function insertData(
     `;
 
     const jobDetails = await executeQuery(jobDetailsQuery, [insertedJob[0].id]);
-
+    console.log("jobdetails", jobDetails)
     return jobDetails[0];  
   } catch (error) {
     console.error("Error inserting job data:", error);
     return null;
   }
 }
-
-
 
 async function updateJob(jobId, jobData) {
   const { job_title, work_loc, commitment, remote, job_link, description, categories, level, compensation, company_profile_id } = jobData;
@@ -313,6 +316,26 @@ async function updateJob(jobId, jobData) {
   }
 }
 
+async function deleteJob(jobId) {
+  try {
+    const query = `
+      DELETE FROM jb_jobs 
+      WHERE id = $1 
+      RETURNING *;
+    `;
+    const deletedJob = await executeQuery(query, [jobId]);
+    
+    if (deletedJob.length === 0) {
+      return null;
+    }
+    
+    return deletedJob[0]; 
+  } catch (error) {
+    console.error("Error deleting job:", error);
+    return null;
+  }
+}
+
 async function insertProfile(email,company_name, website, fileLink) {
   try {
       const findUserQuery = 'SELECT id FROM jb_users WHERE email = $1';
@@ -341,5 +364,6 @@ module.exports = {
   getJobById,
   insertData,
   updateJob,
+  deleteJob,
   insertProfile
 };
