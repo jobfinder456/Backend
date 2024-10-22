@@ -93,7 +93,7 @@ async function getData(offset, limit, searchTerm, location, remote, categories, 
         ON JB_JOBS.company_profile_id = company_profile.id
     `;
     
-    let conditions = [`JB_JOBS.is_ok = true`]; 
+    let conditions = [`JB_JOBS.is_ok = false`]; 
     let params = [];
 
     if (searchTerm) {
@@ -183,18 +183,6 @@ async function insertData(
   name,
   email
 ) {
-  console.log(company_profile_id,
-    job_title,
-    work_loc,
-    commitment,
-    remote,
-    job_link,
-    description,
-    categories,
-    level,
-    compensation,
-    name,
-    email)
   try {
     const insertJobQuery = `
       INSERT INTO jb_jobs (
@@ -248,7 +236,6 @@ async function insertData(
     `;
 
     const jobDetails = await executeQuery(jobDetailsQuery, [insertedJob[0].id]);
-    console.log("jobdetails", jobDetails)
     return jobDetails[0];  
   } catch (error) {
     console.error("Error inserting job data:", error);
@@ -257,7 +244,7 @@ async function insertData(
 }
 
 async function updateJob(jobId, jobData) {
-  const { job_title, work_loc, commitment, remote, job_link, description, categories, level, compensation, company_profile_id } = jobData;
+  const { job_title, work_loc, commitment, remote, job_link, description, categories, level, compensation, company_profile_id, name, email } = jobData;
   try {
     const query = `
       UPDATE jb_jobs
@@ -271,8 +258,10 @@ async function updateJob(jobId, jobData) {
         categories = $7,
         level = $8,
         compensation = $9,
-        company_profile_id = $10
-      WHERE id = $11
+        name = $10,
+        email = $11,
+        company_profile_id = $12
+      WHERE id = $13
       RETURNING *
     `;
     
@@ -286,6 +275,8 @@ async function updateJob(jobId, jobData) {
       categories,
       level,
       compensation,
+      name,
+      email,
       company_profile_id,
       jobId
     ]);

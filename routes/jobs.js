@@ -23,22 +23,19 @@ const validateJobFields = (body) => {
     job_link,
     description,
     categories,
-    level
+    level,
   } = body;
 
-  if (
-    !job_title ||
-    !work_loc ||
-    !commitment ||
-    typeof remote === "undefined" ||  
-    !job_link ||
-    !description ||
-    !categories ||
-    !level 
-  ) {
-    return false;
-  }
-  return true;
+  return (
+    job_title &&
+    work_loc &&
+    commitment &&
+    typeof remote !== "undefined" &&
+    job_link &&
+    description &&
+    categories &&
+    level
+  );
 };
 
 router.get("/list", async (req, res) => {
@@ -48,19 +45,28 @@ router.get("/list", async (req, res) => {
     const searchTerm = req.query.search || "";
     const location = req.query.loc || "";
     const remote = req.query.remote ? req.query.remote === "true" : undefined;
-    const categories = req.query.categories || ""; 
-    const level = req.query.level || ""; 
-    const compensation = req.query.compensation || ""; 
+    const categories = req.query.categories || "";
+    const level = req.query.level || "";
+    const compensation = req.query.compensation || "";
     const commitment = req.query.commitment || "";
     const offset = (page - 1) * limit;
 
-    const all = await getData(offset, limit, searchTerm, location, remote, categories, level, compensation, commitment);
+    const all = await getData(
+      offset,
+      limit,
+      searchTerm,
+      location,
+      remote,
+      categories,
+      level,
+      compensation,
+      commitment
+    );
     res.status(200).json({ all });
   } catch (error) {
-    handleError(res, error);
+    handleError(res, error, "Failed to retrieve jobs");
   }
 });
-
 
 router.get("/jobs/:id", async (req, res) => {
   const jobId = req.params.id;
@@ -72,7 +78,7 @@ router.get("/jobs/:id", async (req, res) => {
     }
     res.status(200).json(job);
   } catch (error) {
-    handleError(res, error);
+    handleError(res, error, `Failed to retrieve job with ID: ${jobId}`);
   }
 });
 
@@ -90,15 +96,15 @@ router.post("/insert", authMiddleware, async (req, res) => {
       compensation,
       name,
       email,
-      company_profile_id 
+      user_profile_id,
     } = req.body;
 
     if (!validateJobFields(req.body)) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    await insertData(
-      company_profile_id,  
+    const insertedJob = await insertData(
+      user_profile_id,
       job_title,
       work_loc,
       commitment,
@@ -111,13 +117,19 @@ router.post("/insert", authMiddleware, async (req, res) => {
       name,
       email
     );
-    
-    res.status(201).json({ message: "Job inserted successfully" });
+
+    if (!insertedJob) {
+      return res.status(500).json({ error: "Failed to insert job. Please try again." });
+    }
+
+    res.status(201).json({
+      message: "Job inserted successfully",
+      job: insertedJob,
+    });
   } catch (error) {
-    handleError(res, error);
+    handleError(res, error, "Error inserting job");
   }
 });
-
 
 router.put("/jobs/:id", authMiddleware, async (req, res) => {
   const jobId = req.params.id;
@@ -134,7 +146,7 @@ router.put("/jobs/:id", authMiddleware, async (req, res) => {
 
     res.status(200).json({ message: "Job updated successfully", job: updatedJob });
   } catch (error) {
-    handleError(res, error);
+    handleError(res, error, `Failed to update job with ID: ${jobId}`);
   }
 });
 
@@ -147,23 +159,24 @@ router.delete("/jobs/:id", authMiddleware, async (req, res) => {
     }
     res.status(200).json({ message: "Job deleted successfully" });
   } catch (error) {
-    handleError(res, error);
+    handleError(res, error, `Failed to delete job with ID: ${jobId}`);
   }
 });
 
-router.get("/jobs", authMiddleware,async (req, res) => {
+router.get("/jobs", authMiddleware, async (req, res) => {
   try {
     const email = req.email;
     const all = await getuserjobData(email);
     res.status(200).json({ all });
   } catch (error) {
-    handleError(res, error);
+    handleError(res, error, `Failed to retrieve jobs for user with email: ${email}`);
   }
 });
 
-function handleError(res, error) {
-  console.error(error);
-  res.status(500).json({ error: "Internal server error" });
+function handleError(res, error, customMessage) {
+  console.error(customMessage, error);
+
+  res.status(500).json({ error: customMessage || "Internal server error" });
 }
 
 module.exports = router;
