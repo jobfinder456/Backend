@@ -96,7 +96,7 @@ router.post("/insert", authMiddleware, async (req, res) => {
       compensation,
       name,
       email,
-      user_profile_id,
+      company_profile_id,
     } = req.body;
 
     if (!validateJobFields(req.body)) {
@@ -104,7 +104,7 @@ router.post("/insert", authMiddleware, async (req, res) => {
     }
 
     const insertedJob = await insertData(
-      user_profile_id,
+      company_profile_id,
       job_title,
       work_loc,
       commitment,
@@ -121,7 +121,7 @@ router.post("/insert", authMiddleware, async (req, res) => {
     if (!insertedJob) {
       return res.status(500).json({ error: "Failed to insert job. Please try again." });
     }
-
+    
     res.status(201).json({
       message: "Job inserted successfully",
       job: insertedJob,

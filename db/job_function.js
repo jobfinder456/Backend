@@ -92,8 +92,8 @@ async function getData(offset, limit, searchTerm, location, remote, categories, 
       JOIN company_profile 
         ON JB_JOBS.company_profile_id = company_profile.id
     `;
-    
-    let conditions = [`JB_JOBS.is_ok = false`]; 
+
+    let conditions = []; 
     let params = [];
 
     if (searchTerm) {
