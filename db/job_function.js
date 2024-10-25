@@ -97,7 +97,7 @@ async function getData(offset, limit, searchTerm, location, remote, categories, 
     let params = [];
 
     if (searchTerm) {
-      conditions.push(`JB_JOBS.job_title ILIKE $${params.length + 1} `);
+      conditions.push(`JB_JOBS.job_title ILIKE $${params.length + 1}`);
       params.push(`%${searchTerm}%`); 
     }
 
@@ -138,6 +138,10 @@ async function getData(offset, limit, searchTerm, location, remote, categories, 
       query += ` WHERE ` + conditions.join(" AND ");
     }
 
+    // Order by the latest updates
+    query += ` ORDER BY JB_JOBS.last_update DESC`;
+
+    // Pagination
     query += ` OFFSET $${params.length + 1} LIMIT $${params.length + 2}`;
     params.push(offset, limit);
 
@@ -148,6 +152,7 @@ async function getData(offset, limit, searchTerm, location, remote, categories, 
     return [];
   }
 }
+
 
 async function getJobById(jobId) {
   try {
