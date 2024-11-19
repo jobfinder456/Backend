@@ -248,6 +248,12 @@ async function insertData(
   }
 }
 
+async function impressiondb(jobId) {
+  const query = 'UPDATE jb_jobs SET impressions = impressions + 1 WHERE id = $1 ';
+  const addimp = await executeQuery(query, [jobId])
+  return addimp
+}
+
 async function updateJob(jobId, jobData) {
   const { job_title, work_loc, commitment, remote, job_link, description, categories, level, compensation, company_profile_id, name, email } = jobData;
   try {
@@ -332,6 +338,76 @@ async function deleteJob(jobId) {
   }
 }
 
+async function getJobImpressions(jobId) {
+  const query = `
+    SELECT 
+        impressions
+    FROM 
+        jb_jobs
+    WHERE 
+        id = $1
+  `;
+
+  try {
+    const result = await executeQuery(query, [jobId]);
+
+    // Check if result is an array or has a rows property
+    const rows = Array.isArray(result) ? result : result?.rows;
+
+    console.log("Query rows:", rows);
+
+    // Ensure rows exist and fetch impressions
+    if (rows && rows.length > 0) {
+      const impressions = rows[0].impressions; // Access the first row
+      console.log("Impressions found:", impressions);
+      return impressions;
+    } else {
+      console.log("No rows found, returning 0.");
+      return 0;
+    }
+  } catch (error) {
+    console.error("Error in getJobImpressions:", error);
+    throw new Error("Database query failed");
+  }
+}
+
+async function getTotalImpressions(userId) {
+  const query = `
+    SELECT 
+        SUM(j.impressions) AS total_impressions
+    FROM 
+        jb_users u
+    JOIN 
+        company_profile cp ON u.id = cp.jb_user_id
+    JOIN 
+        jb_jobs j ON cp.id = j.company_profile_id
+    WHERE 
+        u.id = $1
+  `;
+
+  try {
+    const result = await executeQuery(query, [userId]);
+
+    // Check if result is an array or has a rows property
+    const rows = Array.isArray(result) ? result : result?.rows;
+
+    console.log("Query rows:", rows);
+
+    // Ensure rows exist and fetch total impressions
+    if (rows && rows.length > 0) {
+      const totalImpressions = rows[0].total_impressions ?? 0; // Use default 0 if null
+      console.log("Total impressions found:", totalImpressions);
+      return totalImpressions;
+    } else {
+      console.log("No rows found, returning 0.");
+      return 0;
+    }
+  } catch (error) {
+    console.error("Error in getTotalImpressions:", error);
+    throw new Error("Database query failed");
+  }
+}
+
 async function insertProfile(email,company_name, website, fileLink) {
   try {
       const findUserQuery = 'SELECT id FROM jb_users WHERE email = $1';
@@ -361,5 +437,8 @@ module.exports = {
   insertData,
   updateJob,
   deleteJob,
-  insertProfile
+  insertProfile,
+  impressiondb,
+  getTotalImpressions,
+  getJobImpressions
 };

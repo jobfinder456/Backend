@@ -6,6 +6,9 @@ const {
   deleteJob,
   getJobById,
   getuserjobData,
+  impressiondb,
+  getTotalImpressions,
+  getJobImpressions
 } = require("../db/job_function");
 const { authMiddleware } = require("../auth/middleware");
 const router = express.Router();
@@ -170,6 +173,55 @@ router.get("/jobs", authMiddleware, async (req, res) => {
     res.status(200).json({ all });
   } catch (error) {
     handleError(res, error, `Failed to retrieve jobs for user with email: ${email}`);
+  }
+});
+
+router.post('/job/:jobId/view', async (req, res) => {
+  const { jobId } = req.params;
+
+  try {
+    await impressiondb(jobId)
+
+    return res.status(200).json({ success: true, message: 'Impression recorded' });
+  } catch (error) {
+    console.error('Error recording job impression:', error);
+    res.status(500).json({ success: false, message: 'Could not record job impression' });
+  }
+});
+
+router.get("/user/impressions", async (req, res) => {
+  const { userId } = req.body;
+
+  // Validate that userId is provided
+  if (!userId) {
+    return res.status(400).json({ success: false, message: "User ID is required" });
+  }
+
+  try {
+    const totalImpressions = await getTotalImpressions(userId);
+
+    res.status(200).json({ success: true, total_impressions: totalImpressions });
+  } catch (error) {
+    console.error("Error fetching impressions:", error);
+    res.status(500).json({ success: false, message: "Could not fetch impressions" });
+  }
+});
+
+router.get("/job/impressions", async (req, res) => {
+  const { jobId } = req.body;
+
+  // Validate that userId is provided
+  if (!jobId) {
+    return res.status(400).json({ success: false, message: "job ID is required" });
+  }
+
+  try {
+    const totalImpressions = await getJobImpressions(jobId);
+
+    res.status(200).json({ success: true, job_impressions: totalImpressions });
+  } catch (error) {
+    console.error("Error fetching impressions:", error);
+    res.status(500).json({ success: false, message: "Could not fetch impressions" });
   }
 });
 
