@@ -76,8 +76,9 @@ router.get("/jobs/:id", async (req, res) => {
 
   try {
     const job = await getJobById(jobId);
-    if (!job) {
-      return res.status(404).json({ error: "Job not found" });
+    const impression = await impressiondb(jobId)
+    if (!job || !impression) {
+      return res.status(404).json({ error: "Job not found or impression not registered" });
     }
     res.status(200).json(job);
   } catch (error) {
@@ -173,19 +174,6 @@ router.get("/jobs", authMiddleware, async (req, res) => {
     res.status(200).json({ all });
   } catch (error) {
     handleError(res, error, `Failed to retrieve jobs for user with email: ${email}`);
-  }
-});
-
-router.post('/job/:jobId/view', async (req, res) => {
-  const { jobId } = req.params;
-
-  try {
-    await impressiondb(jobId)
-
-    return res.status(200).json({ success: true, message: 'Impression recorded' });
-  } catch (error) {
-    console.error('Error recording job impression:', error);
-    res.status(500).json({ success: false, message: 'Could not record job impression' });
   }
 });
 
