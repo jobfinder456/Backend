@@ -182,7 +182,7 @@ router.get("/jobs", authMiddleware, async (req, res) => {
     const { jobResult, hasMore } = await getuserjobData(email, page);
 
     res.status(200).json({
-      jobs: jobResult,
+      all: {jobResult : jobResult},
       hasMore,
       currentPage: page,
     });
