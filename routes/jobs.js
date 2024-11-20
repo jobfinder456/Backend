@@ -170,12 +170,28 @@ router.delete("/jobs/:id", authMiddleware, async (req, res) => {
 router.get("/jobs", authMiddleware, async (req, res) => {
   try {
     const email = req.email;
-    const all = await getuserjobData(email);
-    res.status(200).json({ all });
+
+    // Extract the page number from the query parameters, default to 1 if not provided
+    const page = parseInt(req.query.page) || 1;
+
+    if (page < 1) {
+      return res.status(400).json({ error: "Page number must be 1 or greater." });
+    }
+
+    // Fetch jobs with pagination
+    const { jobResult, hasMore } = await getuserjobData(email, page);
+
+    res.status(200).json({
+      jobs: jobResult,
+      hasMore,
+      currentPage: page,
+    });
   } catch (error) {
-    handleError(res, error, `Failed to retrieve jobs for user with email: ${email}`);
+    console.error(`Failed to retrieve jobs for user with email: ${req.email}`, error);
+    handleError(res, error, "Failed to retrieve jobs.");
   }
 });
+
 
 router.get("/user/impressions", async (req, res) => {
   const { userId } = req.body;

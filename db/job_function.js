@@ -56,8 +56,11 @@ async function jobUpdate(jobIds) {
   }
 }
 
-async function getuserjobData(email) {
+async function getuserjobData(email, page) {
   try {
+    const jobsPerPage = 20; // Number of jobs to send per request
+    const offset = (page - 1) * jobsPerPage; // Calculate the offset based on the page number
+
     const query = `
       SELECT 
         jb_jobs.*,
@@ -66,19 +69,22 @@ async function getuserjobData(email) {
       JOIN company_profile ON jb_users.id = company_profile.jb_user_id
       JOIN jb_jobs ON company_profile.id = jb_jobs.company_profile_id
       WHERE jb_users.email = $1
+      LIMIT $2 OFFSET $3
     `;
 
-    const jobResult = await executeQuery(query, [email]);
+    const jobResult = await executeQuery(query, [email, jobsPerPage, offset]);
 
     if (jobResult.length === 0) {
-      return { jobResult: [] };
+      return { jobResult: [], hasMore: false }; // Indicate no more jobs available
     }
-    return { jobResult };
+
+    return { jobResult, hasMore: jobResult.length === jobsPerPage }; // Indicate if more jobs are available
   } catch (error) {
     console.error("Error executing query:", error);
-    return { jobResult: [] };
+    return { jobResult: [], hasMore: false };
   }
 }
+
 
 async function getData(offset, limit, searchTerm, location, remote, categories, level, compensation, commitment) {
   try {
