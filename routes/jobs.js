@@ -204,25 +204,7 @@ router.get("/user/impressions", async (req, res) => {
   try {
     const totalImpressions = await getTotalImpressions(userId);
 
-    res.status(200).json({ success: true, total_impressions: totalImpressions });
-  } catch (error) {
-    console.error("Error fetching impressions:", error);
-    res.status(500).json({ success: false, message: "Could not fetch impressions" });
-  }
-});
-
-router.get("/job/impressions", async (req, res) => {
-  const { jobId } = req.body;
-
-  // Validate that userId is provided
-  if (!jobId) {
-    return res.status(400).json({ success: false, message: "job ID is required" });
-  }
-
-  try {
-    const totalImpressions = await getJobImpressions(jobId);
-
-    res.status(200).json({ success: true, job_impressions: totalImpressions });
+    res.status(200).json({ success: true, total_impressions: totalImpressions.totalImpressions,total_jobs:totalImpressions.totalJobs,jobs_ok_true:totalImpressions.jobsOkTrue,jobs_ok_false:totalImpressions.jobsOkFalse });
   } catch (error) {
     console.error("Error fetching impressions:", error);
     res.status(500).json({ success: false, message: "Could not fetch impressions" });

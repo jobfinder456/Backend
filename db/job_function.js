@@ -380,7 +380,10 @@ async function getJobImpressions(jobId) {
 async function getTotalImpressions(userId) {
   const query = `
     SELECT 
-        SUM(j.impressions) AS total_impressions
+        COUNT(j.id) AS total_jobs,                           -- Total number of jobs
+        SUM(j.impressions) AS total_impressions,            -- Total impressions count
+        COUNT(CASE WHEN j.is_ok = TRUE THEN 1 END) AS jobs_ok_true, -- Total jobs with is_ok = true
+        COUNT(CASE WHEN j.is_ok = FALSE THEN 1 END) AS jobs_ok_false -- Total jobs with is_ok = false
     FROM 
         jb_users u
     JOIN 
@@ -399,17 +402,38 @@ async function getTotalImpressions(userId) {
 
     console.log("Query rows:", rows);
 
-    // Ensure rows exist and fetch total impressions
     if (rows && rows.length > 0) {
-      const totalImpressions = rows[0].total_impressions ?? 0; // Use default 0 if null
-      console.log("Total impressions found:", totalImpressions);
-      return totalImpressions;
+      const {
+        total_jobs = 0,
+        total_impressions = 0,
+        jobs_ok_true = 0,
+        jobs_ok_false = 0,
+      } = rows[0];
+
+      console.log("Job stats:", {
+        total_jobs,
+        total_impressions,
+        jobs_ok_true,
+        jobs_ok_false,
+      });
+
+      return {
+        totalJobs: total_jobs,
+        totalImpressions: total_impressions,
+        jobsOkTrue: jobs_ok_true,
+        jobsOkFalse: jobs_ok_false,
+      };
     } else {
-      console.log("No rows found, returning 0.");
-      return 0;
+      console.log("No rows found, returning defaults.");
+      return {
+        totalJobs: 0,
+        totalImpressions: 0,
+        jobsOkTrue: 0,
+        jobsOkFalse: 0,
+      };
     }
   } catch (error) {
-    console.error("Error in getTotalImpressions:", error);
+    console.error("Error in getUserJobStats:", error);
     throw new Error("Database query failed");
   }
 }
