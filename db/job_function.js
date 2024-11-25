@@ -438,6 +438,33 @@ async function getTotalImpressions(userId) {
   }
 }
 
+
+async function insertResume(name, email, fileLink, position) {
+  try {
+
+    const query = `
+      INSERT INTO user_details (name, email, s3_resume_url, position)
+      VALUES ($1, $2, $3, $4)
+      RETURNING *;
+    `;
+    const values = [name, email, fileLink, position];
+
+    const result = await pool.query(query, values);
+
+    return {
+      success: true,
+      data: result.rows[0], 
+    };
+  } catch (error) {
+    console.error("Error inserting resume into database:", error);
+
+    return {
+      success: false,
+      error: "Failed to insert data into the database.",
+    };
+  }
+}
+
 async function insertProfile(email,company_name, website, fileLink) {
   try {
       const findUserQuery = 'SELECT id FROM jb_users WHERE email = $1';
@@ -459,6 +486,70 @@ async function insertProfile(email,company_name, website, fileLink) {
   }
 }
 
+async function getAllCompanies() {
+  const query = `
+    SELECT 
+      company_name, 
+      image_url 
+    FROM company_profile;
+  `;
+
+  try {
+    const result = await executeQuery(query);
+    console.log(result)
+    return result; // Returns an array of company objects
+  } catch (error) {
+    console.error("Error fetching all companies:", error);
+    throw error; // Propagate the error to the calling function
+  }
+}
+
+// Function to fetch company details and its jobs
+async function getCompanyDetails(company) {
+  const getCompanyIdQuery = `
+    SELECT id 
+    FROM company_profile 
+    WHERE company_name = $1;
+  `;
+
+  const getJobsQuery = `
+    SELECT id,
+      company_profile_id,
+      job_title,
+      work_loc,
+      commitment,
+      remote,
+      job_link,
+      description,
+      is_ok,
+      categories,
+      level,
+      compensation
+    FROM jb_jobs 
+    WHERE company_profile_id = $1;
+  `;
+
+  try {
+    // Step 1: Get the company ID
+    const companyResult = await executeQuery(getCompanyIdQuery, [company]);
+    if (companyResult.length === 0) {
+      return null; // No company found with the given name
+    }
+    const companyId = companyResult[0].id;
+
+    // Step 2: Get all jobs for the company ID
+    const jobsResult = await executeQuery(getJobsQuery, [companyId]);
+
+    return {
+      company_name: company,
+      jobs: jobsResult, // Returns an array of job objects
+    };
+  } catch (error) {
+    console.error("Error fetching company details:", error);
+    throw error; // Propagate the error to the calling function
+  }
+}
+
 module.exports = {
   jobUpdate,
   getuserjobData,
@@ -470,5 +561,8 @@ module.exports = {
   insertProfile,
   impressiondb,
   getTotalImpressions,
-  getJobImpressions
+  getJobImpressions,
+  insertResume,
+  getAllCompanies,
+  getCompanyDetails
 };

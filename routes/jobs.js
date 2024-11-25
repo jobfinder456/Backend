@@ -8,7 +8,9 @@ const {
   getuserjobData,
   impressiondb,
   getTotalImpressions,
-  getJobImpressions
+  getAllCompanies,
+  getCompanyDetails
+
 } = require("../db/job_function");
 const { authMiddleware } = require("../auth/middleware");
 const router = express.Router();
@@ -211,6 +213,33 @@ router.get("/user/impressions", async (req, res) => {
   }
 });
 
+router.get("/companies", async (req, res) => {
+  try {
+    const companies = await getAllCompanies();
+    console.log(companies)
+    res.status(200).json({ success: true, data: companies });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+router.get("/companies/:company", async (req, res) => {
+  const { company } = req.params;
+
+  try {
+    const companyData = await getCompanyDetails(company);
+
+    if (!companyData) {
+      return res.status(404).json({ success: false, message: "Company not found" });
+    }
+
+    res.status(200).json({ success: true, data: companyData });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
 function handleError(res, error, customMessage) {
   console.error(customMessage, error);
 
