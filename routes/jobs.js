@@ -195,16 +195,11 @@ router.get("/jobs", authMiddleware, async (req, res) => {
 });
 
 
-router.get("/user/impressions", async (req, res) => {
-  const { userId } = req.body;
-
-  // Validate that userId is provided
-  if (!userId) {
-    return res.status(400).json({ success: false, message: "User ID is required" });
-  }
+router.get("/user/impressions", authMiddleware, async (req, res) => {
+  const email  = req.email;
 
   try {
-    const totalImpressions = await getTotalImpressions(userId);
+    const totalImpressions = await getTotalImpressions(email);
 
     res.status(200).json({ success: true, total_impressions: totalImpressions.totalImpressions,total_jobs:totalImpressions.totalJobs,jobs_ok_true:totalImpressions.jobsOkTrue,jobs_ok_false:totalImpressions.jobsOkFalse });
   } catch (error) {

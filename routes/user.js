@@ -27,7 +27,7 @@ async function createPreSignedPost(key, contentType) {
     return { fileLink, signedUrl };
   }
 
-router.post("/s3resume", authMiddleware, async (req, res) => {
+router.post("/s3resume", async (req, res) => {
     try {
       const { contentType } = req.body;
   

@@ -377,28 +377,49 @@ async function getJobImpressions(jobId) {
   }
 }
 
-async function getTotalImpressions(userId) {
-  const query = `
-    SELECT 
-        COUNT(j.id) AS total_jobs,                           -- Total number of jobs
-        SUM(j.impressions) AS total_impressions,            -- Total impressions count
-        COUNT(CASE WHEN j.is_ok = TRUE THEN 1 END) AS jobs_ok_true, -- Total jobs with is_ok = true
-        COUNT(CASE WHEN j.is_ok = FALSE THEN 1 END) AS jobs_ok_false -- Total jobs with is_ok = false
-    FROM 
-        jb_users u
-    JOIN 
-        company_profile cp ON u.id = cp.jb_user_id
-    JOIN 
-        jb_jobs j ON cp.id = j.company_profile_id
-    WHERE 
-        u.id = $1
-  `;
-
+async function getTotalImpressions(email) {
   try {
-    const result = await executeQuery(query, [userId]);
+    // Step 1: Fetch user ID based on the provided email
+    const userQuery = `
+      SELECT id 
+      FROM jb_users 
+      WHERE email = $1
+    `;
+    const userResult = await executeQuery(userQuery, [email]);
+
+    // Extract user ID from the query result
+    const userRows = Array.isArray(userResult) ? userResult : userResult?.rows;
+    if (!userRows || userRows.length === 0) {
+      console.log("No user found with the provided email.");
+      return {
+        totalJobs: 0,
+        totalImpressions: 0,
+        jobsOkTrue: 0,
+        jobsOkFalse: 0,
+      };
+    }
+    const userId = userRows[0]?.id;
+
+    // Step 2: Fetch job stats using the user ID
+    const jobStatsQuery = `
+      SELECT 
+          COUNT(j.id) AS total_jobs,                           -- Total number of jobs
+          SUM(j.impressions) AS total_impressions,            -- Total impressions count
+          COUNT(CASE WHEN j.is_ok = TRUE THEN 1 END) AS jobs_ok_true, -- Total jobs with is_ok = true
+          COUNT(CASE WHEN j.is_ok = FALSE THEN 1 END) AS jobs_ok_false -- Total jobs with is_ok = false
+      FROM 
+          jb_users u
+      JOIN 
+          company_profile cp ON u.id = cp.jb_user_id
+      JOIN 
+          jb_jobs j ON cp.id = j.company_profile_id
+      WHERE 
+          u.id = $1
+    `;
+    const jobStatsResult = await executeQuery(jobStatsQuery, [userId]);
 
     // Check if result is an array or has a rows property
-    const rows = Array.isArray(result) ? result : result?.rows;
+    const rows = Array.isArray(jobStatsResult) ? jobStatsResult : jobStatsResult?.rows;
 
     console.log("Query rows:", rows);
 
@@ -433,10 +454,11 @@ async function getTotalImpressions(userId) {
       };
     }
   } catch (error) {
-    console.error("Error in getUserJobStats:", error);
+    console.error("Error in getTotalImpressions:", error);
     throw new Error("Database query failed");
   }
 }
+
 
 
 async function insertResume(name, email, fileLink, position) {
