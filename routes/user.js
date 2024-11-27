@@ -1,8 +1,14 @@
 const express = require("express");
 const router = express.Router();
 const path = require("path");
+const { v4: uuidv4 } = require("uuid");
 require("dotenv").config({ path: path.join(__dirname, "../.env") });
 const {insertResume} = require("../db/job_function")
+const {
+  PutObjectCommand,
+  S3Client
+} = require("@aws-sdk/client-s3");
+const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
 router.use(express.json());
 
@@ -58,10 +64,10 @@ router.post("/s3resume", async (req, res) => {
 router.post("/resume", async(req,res)=>{
     try {
       const { name, email, fileLink, position } = req.body
-      if( !name || !email || ! fileLink || !position ){
+      if( !name || !email || !fileLink || !position ){
         return res.status(400).json({ error: "Missing required fields" });
       }
-      const result = await insertResume(name,email,fileLink.position)
+      const result = await insertResume(name,email,fileLink,position)
       if (result.success) {
         return res.status(201).json({
           message: "Data inserted successfully",

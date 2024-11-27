@@ -608,8 +608,6 @@ WHERE LOWER(REPLACE(company_name, ' ', '')) ILIKE LOWER(REPLACE($1, ' ', ''));
   }
 }
 
-
-
 module.exports = {
   jobUpdate,
   getuserjobData,
