@@ -235,6 +235,7 @@ router.get("/companies/:company", async (req, res) => {
   };
 
   try {
+    console.log(company, searchParams,page)
     const companyData = await getCompanyDetails(company, searchParams, page);
 
     if (!companyData) {

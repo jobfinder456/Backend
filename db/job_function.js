@@ -532,11 +532,11 @@ async function getCompanyDetails(company, searchParams, page = 1) {
 
   const getCompanyIdQuery = `
     SELECT id 
-    FROM company_profile 
-    WHERE company_name ILIKE $1;
+FROM company_profile 
+WHERE LOWER(REPLACE(company_name, ' ', '')) ILIKE LOWER(REPLACE($1, ' ', ''));
+
   `;
 
-  // Base query for jobs
   let getJobsQuery = `
     SELECT id,
       company_profile_id,
@@ -554,11 +554,11 @@ async function getCompanyDetails(company, searchParams, page = 1) {
     WHERE company_profile_id = $1
   `;
 
-  // Array to store query parameters
-  const queryParams = [company];
-  let paramIndex = 2; // Start at 2 since the first parameter is company ID
+  // Query parameters
+  const queryParams = [];
+  let paramIndex = 2; // Start at 2 since companyId will be $1
 
-  // Dynamically add search filters based on query parameters
+  // Add dynamic filters
   if (searchParams.job_title) {
     getJobsQuery += ` AND job_title ILIKE $${paramIndex}`;
     queryParams.push(`%${searchParams.job_title}%`);
@@ -588,22 +588,26 @@ async function getCompanyDetails(company, searchParams, page = 1) {
     // Step 1: Get the company ID
     const companyResult = await executeQuery(getCompanyIdQuery, [company]);
     if (companyResult.length === 0) {
-      return null; // No company found with the given name
+      return null; // No company found
     }
     const companyId = companyResult[0].id;
 
-    // Step 2: Get jobs with search filters and pagination
+    // Step 2: Execute job query
+    console.log("Query:", getJobsQuery);
+    console.log("Parameters:", [companyId, ...queryParams]);
+
     const jobsResult = await executeQuery(getJobsQuery, [companyId, ...queryParams]);
 
     return {
       company_name: company,
-      jobs: jobsResult, // Returns an array of job objects
+      jobs: jobsResult,
     };
   } catch (error) {
     console.error("Error fetching company details:", error);
-    throw error; // Propagate the error to the calling function
+    throw error;
   }
 }
+
 
 
 module.exports = {
