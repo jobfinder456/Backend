@@ -58,8 +58,8 @@ async function jobUpdate(jobIds) {
 
 async function getuserjobData(email, page) {
   try {
-    const jobsPerPage = 20; // Number of jobs to send per request
-    const offset = (page - 1) * jobsPerPage; // Calculate the offset based on the page number
+    const jobsPerPage = 20; 
+    const offset = (page - 1) * jobsPerPage; 
 
     const query = `
       SELECT 
@@ -75,10 +75,10 @@ async function getuserjobData(email, page) {
     const jobResult = await executeQuery(query, [email, jobsPerPage, offset]);
 
     if (jobResult.length === 0) {
-      return { jobResult: [], hasMore: false }; // Indicate no more jobs available
+      return { jobResult: [], hasMore: false }; 
     }
 
-    return { jobResult, hasMore: jobResult.length === jobsPerPage }; // Indicate if more jobs are available
+    return { jobResult, hasMore: jobResult.length === jobsPerPage }; 
   } catch (error) {
     console.error("Error executing query:", error);
     return { jobResult: [], hasMore: false };
@@ -144,10 +144,8 @@ async function getData(offset, limit, searchTerm, location, remote, categories, 
       query += ` WHERE ` + conditions.join(" AND ");
     }
 
-    // Order by the latest updates
     query += ` ORDER BY JB_JOBS.last_update DESC`;
 
-    // Pagination
     query += ` OFFSET $${params.length + 1} LIMIT $${params.length + 2}`;
     params.push(offset, limit);
 
@@ -357,14 +355,12 @@ async function getJobImpressions(jobId) {
   try {
     const result = await executeQuery(query, [jobId]);
 
-    // Check if result is an array or has a rows property
     const rows = Array.isArray(result) ? result : result?.rows;
 
     console.log("Query rows:", rows);
 
-    // Ensure rows exist and fetch impressions
     if (rows && rows.length > 0) {
-      const impressions = rows[0].impressions; // Access the first row
+      const impressions = rows[0].impressions; 
       console.log("Impressions found:", impressions);
       return impressions;
     } else {
@@ -379,7 +375,7 @@ async function getJobImpressions(jobId) {
 
 async function getTotalImpressions(email) {
   try {
-    // Step 1: Fetch user ID based on the provided email
+
     const userQuery = `
       SELECT id 
       FROM jb_users 
@@ -387,7 +383,6 @@ async function getTotalImpressions(email) {
     `;
     const userResult = await executeQuery(userQuery, [email]);
 
-    // Extract user ID from the query result
     const userRows = Array.isArray(userResult) ? userResult : userResult?.rows;
     if (!userRows || userRows.length === 0) {
       console.log("No user found with the provided email.");
@@ -400,7 +395,6 @@ async function getTotalImpressions(email) {
     }
     const userId = userRows[0]?.id;
 
-    // Step 2: Fetch job stats using the user ID
     const jobStatsQuery = `
       SELECT 
           COUNT(j.id) AS total_jobs,                           -- Total number of jobs
@@ -418,7 +412,6 @@ async function getTotalImpressions(email) {
     `;
     const jobStatsResult = await executeQuery(jobStatsQuery, [userId]);
 
-    // Check if result is an array or has a rows property
     const rows = Array.isArray(jobStatsResult) ? jobStatsResult : jobStatsResult?.rows;
 
     console.log("Query rows:", rows);
@@ -458,8 +451,6 @@ async function getTotalImpressions(email) {
     throw new Error("Database query failed");
   }
 }
-
-
 
 async function insertResume(name, email, fileLink, position) {
   try {
@@ -523,26 +514,23 @@ async function getAllCompanies() {
   try {
     const result = await executeQuery(query);
     console.log(result);
-    return result; // Returns an array of company objects with total jobs
+    return result; 
   } catch (error) {
     console.error("Error fetching all companies:", error);
     throw error; 
   }
 }
 
-
 async function getCompanyDetails(company, searchParams, page = 1) {
   const jobsPerPage = 20;
   const offset = (page - 1) * jobsPerPage;
 
-  // Query to get company profile details
   const getCompanyDetailsQuery = `
     SELECT * 
     FROM company_profile 
     WHERE LOWER(REPLACE(company_name, ' ', '')) ILIKE LOWER(REPLACE($1, ' ', ''));
   `;
 
-  // Base jobs query
   let getJobsQuery = `
     SELECT id,
       company_profile_id,
@@ -560,18 +548,15 @@ async function getCompanyDetails(company, searchParams, page = 1) {
     WHERE company_profile_id = $1
   `;
 
-  // Base query to get job count
   const getJobCountQuery = `
     SELECT COUNT(*) AS total_jobs
     FROM jb_jobs 
     WHERE company_profile_id = $1
   `;
 
-  // Query parameters
   const queryParams = [];
-  let paramIndex = 2; // Start at 2 since companyId will be $1
+  let paramIndex = 2; 
 
-  // Add dynamic filters to jobs query and job count query
   if (searchParams.job_title) {
     const filter = ` AND job_title ILIKE $${paramIndex}`;
     getJobsQuery += filter;
@@ -587,7 +572,7 @@ async function getCompanyDetails(company, searchParams, page = 1) {
   if (searchParams.remote !== undefined) {
     const filter = ` AND remote = $${paramIndex}`;
     getJobsQuery += filter;
-    queryParams.push(searchParams.remote === "true"); // Convert "true"/"false" to boolean
+    queryParams.push(searchParams.remote === "true"); 
     paramIndex++;
   }
   if (searchParams.commitment) {
@@ -597,33 +582,28 @@ async function getCompanyDetails(company, searchParams, page = 1) {
     paramIndex++;
   }
 
-  // Add pagination to jobs query
   getJobsQuery += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
   queryParams.push(jobsPerPage, offset);
 
   try {
-    // Step 1: Get the company details
     const companyDetailsResult = await executeQuery(getCompanyDetailsQuery, [company]);
     if (companyDetailsResult.length === 0) {
-      return null; // No company found
+      return null; 
     }
     const companyDetails = companyDetailsResult[0];
     const companyId = companyDetails.id;
 
-    // Step 2: Get total job count
     console.log("Job Count Query:", getJobCountQuery);
     console.log("Parameters for Count:", [companyId, ...queryParams.slice(0, paramIndex - 2)]);
 
     const jobCountResult = await executeQuery(getJobCountQuery, [companyId]);
     const totalJobs = parseInt(jobCountResult[0]?.total_jobs || "0", 10);
 
-    // Step 3: Get paginated jobs
     console.log("Jobs Query:", getJobsQuery);
     console.log("Parameters for Jobs:", [companyId, ...queryParams]);
 
     const jobsResult = await executeQuery(getJobsQuery, [companyId, ...queryParams]);
 
-    // Combine results
     return {
       company_profile: companyDetails,
       jobs: jobsResult,
