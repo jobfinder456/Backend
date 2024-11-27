@@ -530,13 +530,14 @@ async function getCompanyDetails(company, searchParams, page = 1) {
   const jobsPerPage = 20;
   const offset = (page - 1) * jobsPerPage;
 
-  const getCompanyIdQuery = `
-    SELECT id 
-FROM company_profile 
-WHERE LOWER(REPLACE(company_name, ' ', '')) ILIKE LOWER(REPLACE($1, ' ', ''));
-
+  // Query to get company profile details
+  const getCompanyDetailsQuery = `
+    SELECT * 
+    FROM company_profile 
+    WHERE LOWER(REPLACE(company_name, ' ', '')) ILIKE LOWER(REPLACE($1, ' ', ''));
   `;
 
+  // Base jobs query
   let getJobsQuery = `
     SELECT id,
       company_profile_id,
@@ -554,59 +555,86 @@ WHERE LOWER(REPLACE(company_name, ' ', '')) ILIKE LOWER(REPLACE($1, ' ', ''));
     WHERE company_profile_id = $1
   `;
 
+  // Base query to get job count
+  let getJobCountQuery = `
+    SELECT COUNT(*) AS total_jobs
+    FROM jb_jobs 
+    WHERE company_profile_id = $1
+  `;
+
   // Query parameters
   const queryParams = [];
   let paramIndex = 2; // Start at 2 since companyId will be $1
 
-  // Add dynamic filters
+  // Add dynamic filters to jobs query and job count query
   if (searchParams.job_title) {
-    getJobsQuery += ` AND job_title ILIKE $${paramIndex}`;
+    const filter = ` AND job_title ILIKE $${paramIndex}`;
+    getJobsQuery += filter;
+    getJobCountQuery += filter;
     queryParams.push(`%${searchParams.job_title}%`);
     paramIndex++;
   }
   if (searchParams.location) {
-    getJobsQuery += ` AND work_loc ILIKE $${paramIndex}`;
+    const filter = ` AND work_loc ILIKE $${paramIndex}`;
+    getJobsQuery += filter;
+    getJobCountQuery += filter;
     queryParams.push(`%${searchParams.location}%`);
     paramIndex++;
   }
   if (searchParams.remote !== undefined) {
-    getJobsQuery += ` AND remote = $${paramIndex}`;
+    const filter = ` AND remote = $${paramIndex}`;
+    getJobsQuery += filter;
+    getJobCountQuery += filter;
     queryParams.push(searchParams.remote === "true"); // Convert "true"/"false" to boolean
     paramIndex++;
   }
   if (searchParams.commitment) {
-    getJobsQuery += ` AND commitment ILIKE $${paramIndex}`;
+    const filter = ` AND commitment ILIKE $${paramIndex}`;
+    getJobsQuery += filter;
+    getJobCountQuery += filter;
     queryParams.push(`%${searchParams.commitment}%`);
     paramIndex++;
   }
 
-  // Add pagination
+  // Add pagination to jobs query
   getJobsQuery += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
   queryParams.push(jobsPerPage, offset);
 
   try {
-    // Step 1: Get the company ID
-    const companyResult = await executeQuery(getCompanyIdQuery, [company]);
-    if (companyResult.length === 0) {
+    // Step 1: Get the company details
+    const companyDetailsResult = await executeQuery(getCompanyDetailsQuery, [company]);
+    if (companyDetailsResult.length === 0) {
       return null; // No company found
     }
-    const companyId = companyResult[0].id;
+    const companyDetails = companyDetailsResult[0];
+    const companyId = companyDetails.id;
 
-    // Step 2: Execute job query
-    console.log("Query:", getJobsQuery);
-    console.log("Parameters:", [companyId, ...queryParams]);
+    // Step 2: Get total job count
+    console.log("Job Count Query:", getJobCountQuery);
+    console.log("Parameters for Count:", [companyId, ...queryParams.slice(0, paramIndex - 2)]);
+
+    const jobCountResult = await executeQuery(getJobCountQuery, [companyId, ...queryParams.slice(0, paramIndex - 2)]);
+    const totalJobs = parseInt(jobCountResult[0]?.total_jobs || "0", 10);
+
+    // Step 3: Get paginated jobs
+    console.log("Jobs Query:", getJobsQuery);
+    console.log("Parameters for Jobs:", [companyId, ...queryParams]);
 
     const jobsResult = await executeQuery(getJobsQuery, [companyId, ...queryParams]);
 
+    // Combine results
     return {
-      company_name: company,
+      company_profile: companyDetails,
       jobs: jobsResult,
+      total_jobs: totalJobs,
     };
   } catch (error) {
     console.error("Error fetching company details:", error);
     throw error;
   }
 }
+
+
 
 module.exports = {
   jobUpdate,
