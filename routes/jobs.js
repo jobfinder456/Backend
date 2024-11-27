@@ -221,9 +221,21 @@ router.get("/companies", async (req, res) => {
 
 router.get("/companies/:company", async (req, res) => {
   const { company } = req.params;
+  const page = parseInt(req.query.page) || 1;
+
+  if (page < 1) {
+    return res.status(400).json({ error: "Page number must be 1 or greater." });
+  }
+
+  const searchParams = {
+    job_title: req.query.job_title || null,
+    location: req.query.location || null,
+    remote: req.query.remote || null,
+    commitment: req.query.commitment || null,
+  };
 
   try {
-    const companyData = await getCompanyDetails(company);
+    const companyData = await getCompanyDetails(company, searchParams, page);
 
     if (!companyData) {
       return res.status(404).json({ success: false, message: "Company not found" });
@@ -235,6 +247,7 @@ router.get("/companies/:company", async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
+
 function handleError(res, error, customMessage) {
   console.error(customMessage, error);
 

@@ -522,19 +522,22 @@ async function getAllCompanies() {
     return result; // Returns an array of company objects
   } catch (error) {
     console.error("Error fetching all companies:", error);
-    throw error; // Propagate the error to the calling function
+    throw error; 
   }
 }
 
-// Function to fetch company details and its jobs
-async function getCompanyDetails(company) {
+async function getCompanyDetails(company, searchParams, page = 1) {
+  const jobsPerPage = 20;
+  const offset = (page - 1) * jobsPerPage;
+
   const getCompanyIdQuery = `
     SELECT id 
     FROM company_profile 
-    WHERE company_name = $1;
+    WHERE company_name ILIKE $1;
   `;
 
-  const getJobsQuery = `
+  // Base query for jobs
+  let getJobsQuery = `
     SELECT id,
       company_profile_id,
       job_title,
@@ -548,8 +551,38 @@ async function getCompanyDetails(company) {
       level,
       compensation
     FROM jb_jobs 
-    WHERE company_profile_id = $1;
+    WHERE company_profile_id = $1
   `;
+
+  // Array to store query parameters
+  const queryParams = [company];
+  let paramIndex = 2; // Start at 2 since the first parameter is company ID
+
+  // Dynamically add search filters based on query parameters
+  if (searchParams.job_title) {
+    getJobsQuery += ` AND job_title ILIKE $${paramIndex}`;
+    queryParams.push(`%${searchParams.job_title}%`);
+    paramIndex++;
+  }
+  if (searchParams.location) {
+    getJobsQuery += ` AND work_loc ILIKE $${paramIndex}`;
+    queryParams.push(`%${searchParams.location}%`);
+    paramIndex++;
+  }
+  if (searchParams.remote !== undefined) {
+    getJobsQuery += ` AND remote = $${paramIndex}`;
+    queryParams.push(searchParams.remote === "true"); // Convert "true"/"false" to boolean
+    paramIndex++;
+  }
+  if (searchParams.commitment) {
+    getJobsQuery += ` AND commitment ILIKE $${paramIndex}`;
+    queryParams.push(`%${searchParams.commitment}%`);
+    paramIndex++;
+  }
+
+  // Add pagination
+  getJobsQuery += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+  queryParams.push(jobsPerPage, offset);
 
   try {
     // Step 1: Get the company ID
@@ -559,8 +592,8 @@ async function getCompanyDetails(company) {
     }
     const companyId = companyResult[0].id;
 
-    // Step 2: Get all jobs for the company ID
-    const jobsResult = await executeQuery(getJobsQuery, [companyId]);
+    // Step 2: Get jobs with search filters and pagination
+    const jobsResult = await executeQuery(getJobsQuery, [companyId, ...queryParams]);
 
     return {
       company_name: company,
@@ -571,6 +604,7 @@ async function getCompanyDetails(company) {
     throw error; // Propagate the error to the calling function
   }
 }
+
 
 module.exports = {
   jobUpdate,
