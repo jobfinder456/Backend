@@ -556,7 +556,7 @@ async function getCompanyDetails(company, searchParams, page = 1) {
   `;
 
   // Base query to get job count
-  let getJobCountQuery = `
+  const getJobCountQuery = `
     SELECT COUNT(*) AS total_jobs
     FROM jb_jobs 
     WHERE company_profile_id = $1
@@ -570,28 +570,24 @@ async function getCompanyDetails(company, searchParams, page = 1) {
   if (searchParams.job_title) {
     const filter = ` AND job_title ILIKE $${paramIndex}`;
     getJobsQuery += filter;
-    getJobCountQuery += filter;
     queryParams.push(`%${searchParams.job_title}%`);
     paramIndex++;
   }
   if (searchParams.location) {
     const filter = ` AND work_loc ILIKE $${paramIndex}`;
     getJobsQuery += filter;
-    getJobCountQuery += filter;
     queryParams.push(`%${searchParams.location}%`);
     paramIndex++;
   }
   if (searchParams.remote !== undefined) {
     const filter = ` AND remote = $${paramIndex}`;
     getJobsQuery += filter;
-    getJobCountQuery += filter;
     queryParams.push(searchParams.remote === "true"); // Convert "true"/"false" to boolean
     paramIndex++;
   }
   if (searchParams.commitment) {
     const filter = ` AND commitment ILIKE $${paramIndex}`;
     getJobsQuery += filter;
-    getJobCountQuery += filter;
     queryParams.push(`%${searchParams.commitment}%`);
     paramIndex++;
   }
@@ -613,7 +609,7 @@ async function getCompanyDetails(company, searchParams, page = 1) {
     console.log("Job Count Query:", getJobCountQuery);
     console.log("Parameters for Count:", [companyId, ...queryParams.slice(0, paramIndex - 2)]);
 
-    const jobCountResult = await executeQuery(getJobCountQuery, [companyId, ...queryParams.slice(0, paramIndex - 2)]);
+    const jobCountResult = await executeQuery(getJobCountQuery, [companyId]);
     const totalJobs = parseInt(jobCountResult[0]?.total_jobs || "0", 10);
 
     // Step 3: Get paginated jobs
