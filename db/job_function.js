@@ -511,20 +511,25 @@ async function insertProfile(email,company_name, website, fileLink) {
 async function getAllCompanies() {
   const query = `
     SELECT 
-      company_name, 
-      image_url 
-    FROM company_profile;
+      cp.company_name, 
+      cp.image_url, 
+      COUNT(jj.id) AS total_jobs
+    FROM company_profile cp
+    LEFT JOIN jb_jobs jj
+      ON cp.id = jj.company_profile_id
+    GROUP BY cp.id, cp.company_name, cp.image_url;
   `;
 
   try {
     const result = await executeQuery(query);
-    console.log(result)
-    return result; // Returns an array of company objects
+    console.log(result);
+    return result; // Returns an array of company objects with total jobs
   } catch (error) {
     console.error("Error fetching all companies:", error);
     throw error; 
   }
 }
+
 
 async function getCompanyDetails(company, searchParams, page = 1) {
   const jobsPerPage = 20;
