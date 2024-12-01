@@ -521,7 +521,44 @@ async function getAllCompanies() {
   }
 }
 
-async function getCompanyDetails(company, searchParams, page = 1) {
+async function getCompanyDetails(company) {
+  const getCompanyDetailsQuery = `
+  SELECT * 
+  FROM company_profile 
+  WHERE LOWER(REPLACE(company_name, ' ', '')) ILIKE LOWER(REPLACE($1, ' ', ''));
+`;
+  
+  const getJobCountQuery = `
+    SELECT COUNT(*) AS total_jobs
+    FROM jb_jobs 
+    WHERE company_profile_id = $1
+  `;
+
+  try {
+    const companyDetailsResult = await executeQuery(getCompanyDetailsQuery, [company]);
+    if (companyDetailsResult.length === 0) {
+      return null; 
+    }
+    const companyDetails = companyDetailsResult[0];
+    const companyId = companyDetails.id;
+    const companyName = companyDetails.company_name
+    const imageUrl = companyDetails.image_url
+
+    const jobCountResult = await executeQuery(getJobCountQuery, [companyId]);
+    const totalJobs = parseInt(jobCountResult[0]?.total_jobs || "0", 10);
+
+    return {
+      company: companyName,
+      imageUrl: imageUrl,
+      totalJobs: totalJobs,
+    };
+  } catch (error) {
+    console.error("Error fetching company details:", error);
+    throw error;
+  }
+}
+
+async function getCompanyJobDetails(company, searchParams, page = 1) {
   const jobsPerPage = 20;
   const offset = (page - 1) * jobsPerPage;
 
@@ -544,12 +581,6 @@ async function getCompanyDetails(company, searchParams, page = 1) {
       categories,
       level,
       compensation
-    FROM jb_jobs 
-    WHERE company_profile_id = $1
-  `;
-
-  const getJobCountQuery = `
-    SELECT COUNT(*) AS total_jobs
     FROM jb_jobs 
     WHERE company_profile_id = $1
   `;
@@ -581,7 +612,24 @@ async function getCompanyDetails(company, searchParams, page = 1) {
     queryParams.push(`%${searchParams.commitment}%`);
     paramIndex++;
   }
-
+  if (searchParams.categories) {
+    const filter = ` AND categories ILIKE $${paramIndex}`;
+    getJobsQuery += filter;
+    queryParams.push(`%${searchParams.commitment}%`);
+    paramIndex++;
+  }
+  if (searchParams.level) {
+    const filter = ` AND level ILIKE $${paramIndex}`;
+    getJobsQuery += filter;
+    queryParams.push(`%${searchParams.commitment}%`);
+    paramIndex++;
+  }
+  if (searchParams.compensation) {
+    const filter = ` AND compensation ILIKE $${paramIndex}`;
+    getJobsQuery += filter;
+    queryParams.push(`%${searchParams.commitment}%`);
+    paramIndex++;
+  }
   getJobsQuery += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
   queryParams.push(jobsPerPage, offset);
 
@@ -593,21 +641,10 @@ async function getCompanyDetails(company, searchParams, page = 1) {
     const companyDetails = companyDetailsResult[0];
     const companyId = companyDetails.id;
 
-    console.log("Job Count Query:", getJobCountQuery);
-    console.log("Parameters for Count:", [companyId, ...queryParams.slice(0, paramIndex - 2)]);
-
-    const jobCountResult = await executeQuery(getJobCountQuery, [companyId]);
-    const totalJobs = parseInt(jobCountResult[0]?.total_jobs || "0", 10);
-
-    console.log("Jobs Query:", getJobsQuery);
-    console.log("Parameters for Jobs:", [companyId, ...queryParams]);
-
     const jobsResult = await executeQuery(getJobsQuery, [companyId, ...queryParams]);
-
+    console.log(jobsResult)
     return {
-      company_profile: companyDetails,
       jobs: jobsResult,
-      total_jobs: totalJobs,
     };
   } catch (error) {
     console.error("Error fetching company details:", error);
@@ -631,5 +668,6 @@ module.exports = {
   getJobImpressions,
   insertResume,
   getAllCompanies,
+  getCompanyJobDetails,
   getCompanyDetails
 };

@@ -69,7 +69,7 @@ router.post("/resume", async(req,res)=>{
       }
       const result = await insertResume(name,email,fileLink,position)
       if (result.success) {
-        return res.status(201).json({
+        return res.status(201).json({status:"success",
           message: "Data inserted successfully",
         });
       } else {

@@ -9,6 +9,7 @@ const {
   impressiondb,
   getTotalImpressions,
   getAllCompanies,
+  getCompanyJobDetails,
   getCompanyDetails
 
 } = require("../db/job_function");
@@ -194,7 +195,6 @@ router.get("/jobs", authMiddleware, async (req, res) => {
   }
 });
 
-
 router.get("/user/impressions", authMiddleware, async (req, res) => {
   const email  = req.email;
 
@@ -218,8 +218,17 @@ router.get("/companies", async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
-
 router.get("/companies/:company", async (req, res) => {
+  const { company } = req.params;
+  const companyData = await getCompanyDetails(company);
+  if (!companyData) {
+    return res.status(404).json({ success: false, message: "Company not found" });
+  }
+
+  res.status(200).json({ success: true, data: companyData });
+})
+
+router.get("/companies/info/:company", async (req, res) => {
   const { company } = req.params;
   const page = parseInt(req.query.page) || 1;
 
@@ -231,12 +240,15 @@ router.get("/companies/:company", async (req, res) => {
     job_title: req.query.job_title || null,
     location: req.query.location || null,
     remote: req.query.remote || null,
+    categories: req.query.categories || null,
+    level: req.query.level || null,
+    compensation: req.query.compensation || null,
     commitment: req.query.commitment || null,
   };
 
   try {
     console.log(company, searchParams,page)
-    const companyData = await getCompanyDetails(company, searchParams, page);
+    const companyData = await getCompanyJobDetails(company, searchParams, page);
 
     if (!companyData) {
       return res.status(404).json({ success: false, message: "Company not found" });
