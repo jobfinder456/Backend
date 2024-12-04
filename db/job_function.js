@@ -600,7 +600,7 @@ async function getCompanyJobDetails(company, searchParams, page) {
   if (searchParams.remote) {
     const filter = ` AND remote = $${paramIndex}`;
     getJobsQuery += filter;
-    queryParams.push(searchParams.remote); // Use the exact value in searchParams.remote
+    queryParams.push(searchParams.remote); 
     paramIndex++;
   }
   
@@ -636,6 +636,7 @@ async function getCompanyJobDetails(company, searchParams, page) {
     if (companyDetailsResult.length === 0) {
       return null; 
     }
+    const image_url = companyDetailsResult.image_url
     const companyDetails = companyDetailsResult[0];
     const companyId = companyDetails.id;
     console.log(getJobsQuery, companyId)
@@ -643,6 +644,7 @@ async function getCompanyJobDetails(company, searchParams, page) {
     console.log(jobsResult)
     return {
       jobs: jobsResult,
+      image_url: image_url
     };
   } catch (error) {
     console.error("Error fetching company details:", error);
