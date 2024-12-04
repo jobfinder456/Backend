@@ -567,65 +567,61 @@ async function getCompanyJobDetails(company, searchParams, page) {
   `;
 
   let getJobsQuery = `
-    SELECT id,
-      company_profile_id,
-      job_title,
-      work_loc,
-      commitment,
-      remote,
-      job_link,
-      is_ok,
-      categories,
-      level,
-      compensation
-    FROM jb_jobs 
-    WHERE company_profile_id = $1
+    SELECT 
+      jb_jobs.id,
+      jb_jobs.company_profile_id,
+      jb_jobs.job_title,
+      jb_jobs.work_loc,
+      jb_jobs.commitment,
+      jb_jobs.remote,
+      jb_jobs.job_link,
+      jb_jobs.is_ok,
+      jb_jobs.categories,
+      jb_jobs.level,
+      jb_jobs.compensation,
+      company_profile.image_url
+    FROM jb_jobs
+    JOIN company_profile
+      ON jb_jobs.company_profile_id = company_profile.id
+    WHERE jb_jobs.company_profile_id = $1
   `;
 
   const queryParams = [];
   let paramIndex = 2; 
 
   if (searchParams.job_title) {
-    const filter = ` AND job_title ILIKE $${paramIndex}`;
-    getJobsQuery += filter;
+    getJobsQuery += ` AND jb_jobs.job_title ILIKE $${paramIndex}`;
     queryParams.push(`%${searchParams.job_title}%`);
     paramIndex++;
   }
   if (searchParams.location) {
-    const filter = ` AND work_loc ILIKE $${paramIndex}`;
-    getJobsQuery += filter;
+    getJobsQuery += ` AND jb_jobs.work_loc ILIKE $${paramIndex}`;
     queryParams.push(`%${searchParams.location}%`);
     paramIndex++;
   }
   if (searchParams.remote) {
-    const filter = ` AND remote = $${paramIndex}`;
-    getJobsQuery += filter;
-    queryParams.push(searchParams.remote); 
+    getJobsQuery += ` AND jb_jobs.remote = $${paramIndex}`;
+    queryParams.push(searchParams.remote);
     paramIndex++;
   }
-  
   if (searchParams.commitment) {
-    const filter = ` AND commitment ILIKE $${paramIndex}`;
-    getJobsQuery += filter;
+    getJobsQuery += ` AND jb_jobs.commitment ILIKE $${paramIndex}`;
     queryParams.push(`%${searchParams.commitment}%`);
     paramIndex++;
   }
   if (searchParams.categories) {
-    const filter = ` AND categories ILIKE $${paramIndex}`;
-    getJobsQuery += filter;
-    queryParams.push(`%${searchParams.commitment}%`);
+    getJobsQuery += ` AND jb_jobs.categories ILIKE $${paramIndex}`;
+    queryParams.push(`%${searchParams.categories}%`);
     paramIndex++;
   }
   if (searchParams.level) {
-    const filter = ` AND level ILIKE $${paramIndex}`;
-    getJobsQuery += filter;
-    queryParams.push(`%${searchParams.commitment}%`);
+    getJobsQuery += ` AND jb_jobs.level ILIKE $${paramIndex}`;
+    queryParams.push(`%${searchParams.level}%`);
     paramIndex++;
   }
   if (searchParams.compensation) {
-    const filter = ` AND compensation ILIKE $${paramIndex}`;
-    getJobsQuery += filter;
-    queryParams.push(`%${searchParams.commitment}%`);
+    getJobsQuery += ` AND jb_jobs.compensation ILIKE $${paramIndex}`;
+    queryParams.push(`%${searchParams.compensation}%`);
     paramIndex++;
   }
   getJobsQuery += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
@@ -636,15 +632,14 @@ async function getCompanyJobDetails(company, searchParams, page) {
     if (companyDetailsResult.length === 0) {
       return null; 
     }
-    const image_url = companyDetailsResult.image_url
     const companyDetails = companyDetailsResult[0];
     const companyId = companyDetails.id;
-    console.log(getJobsQuery, companyId)
+    console.log('Query:', getJobsQuery);
+    console.log('Params:', [companyId, ...queryParams]);
+
     const jobsResult = await executeQuery(getJobsQuery, [companyId, ...queryParams]);
-    console.log(jobsResult)
     return {
-      jobs: jobsResult,
-      image_url: image_url
+      jobs: jobsResult
     };
   } catch (error) {
     console.error("Error fetching company details:", error);
