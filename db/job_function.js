@@ -85,7 +85,6 @@ async function getuserjobData(email, page) {
   }
 }
 
-
 async function getData(offset, limit, searchTerm, location, remote, categories, level, compensation, commitment) {
   try {
     let query = `
@@ -156,7 +155,6 @@ async function getData(offset, limit, searchTerm, location, remote, categories, 
     return [];
   }
 }
-
 
 async function getJobById(jobId) {
   try {
@@ -558,7 +556,7 @@ async function getCompanyDetails(company) {
   }
 }
 
-async function getCompanyJobDetails(company, searchParams, page = 1) {
+async function getCompanyJobDetails(company, searchParams, page) {
   const jobsPerPage = 20;
   const offset = (page - 1) * jobsPerPage;
 
@@ -576,7 +574,6 @@ async function getCompanyJobDetails(company, searchParams, page = 1) {
       commitment,
       remote,
       job_link,
-      description,
       is_ok,
       categories,
       level,
@@ -600,12 +597,13 @@ async function getCompanyJobDetails(company, searchParams, page = 1) {
     queryParams.push(`%${searchParams.location}%`);
     paramIndex++;
   }
-  if (searchParams.remote !== undefined) {
+  if (searchParams.remote) {
     const filter = ` AND remote = $${paramIndex}`;
     getJobsQuery += filter;
-    queryParams.push(searchParams.remote === "true"); 
+    queryParams.push(searchParams.remote); // Use the exact value in searchParams.remote
     paramIndex++;
   }
+  
   if (searchParams.commitment) {
     const filter = ` AND commitment ILIKE $${paramIndex}`;
     getJobsQuery += filter;
@@ -640,7 +638,7 @@ async function getCompanyJobDetails(company, searchParams, page = 1) {
     }
     const companyDetails = companyDetailsResult[0];
     const companyId = companyDetails.id;
-
+    console.log(getJobsQuery, companyId)
     const jobsResult = await executeQuery(getJobsQuery, [companyId, ...queryParams]);
     console.log(jobsResult)
     return {
@@ -651,8 +649,6 @@ async function getCompanyJobDetails(company, searchParams, page = 1) {
     throw error;
   }
 }
-
-
 
 module.exports = {
   jobUpdate,
