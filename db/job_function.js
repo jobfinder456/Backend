@@ -60,16 +60,18 @@ async function getuserjobData(email, page) {
   try {
     const jobsPerPage = 20; 
     const offset = (page - 1) * jobsPerPage; 
-
     const query = `
-      SELECT 
-        jb_jobs.*,
-        company_profile.company_name AS company_name
-      FROM jb_users
-      JOIN company_profile ON jb_users.id = company_profile.jb_user_id
-      JOIN jb_jobs ON company_profile.id = jb_jobs.company_profile_id
-      WHERE jb_users.email = $1
-      LIMIT $2 OFFSET $3
+     SELECT 
+    jb_jobs.job_title, 
+    jb_jobs.is_ok, 
+    jb_jobs.impressions, 
+    jb_jobs.last_update,
+    company_profile.company_name AS company_name
+FROM jb_users
+JOIN company_profile ON jb_users.id = company_profile.jb_user_id
+JOIN jb_jobs ON company_profile.id = jb_jobs.company_profile_id
+WHERE jb_users.email = $1
+LIMIT $2 OFFSET $3;
     `;
 
     const jobResult = await executeQuery(query, [email, jobsPerPage, offset]);
