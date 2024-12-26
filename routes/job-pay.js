@@ -78,7 +78,8 @@ router.post("/verify-payment", authMiddleware, async (req, res) => {
 
     if (captureResponse.result.status !== "COMPLETED") {
       const subject = "Payment Failure Notification";
-      const message = `Dear User, \n\nUnfortunately, your payment for job(s) ${rawJobId.join(
+      const jobId = Array.isArray(rawJobId) ? rawJobId : [rawJobId]; // Ensure array
+      const message = `Dear User, \n\nUnfortunately, your payment for job(s) ${jobId.join(
         ", "
       )} did not proceed successfully. Please try again. \n\nThanks,\nGetJobs Team`;
 
@@ -105,7 +106,8 @@ router.post("/verify-payment", authMiddleware, async (req, res) => {
     console.error("Error verifying PayPal order:", error);
 
     const subject = "Payment Verification Failure";
-    const message = `Dear User, \n\nWe encountered an error while verifying your payment for job(s) ${rawJobId.join(
+    const jobId = Array.isArray(rawJobId) ? rawJobId : [rawJobId]; // Ensure array
+    const message = `Dear User, \n\nWe encountered an error while verifying your payment for job(s) ${jobId.join(
       ", "
     )}. Please contact support for assistance. \n\nThanks,\nGetJobs Team`;
 

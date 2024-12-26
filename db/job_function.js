@@ -358,14 +358,10 @@ async function getJobImpressions(jobId) {
 
     const rows = Array.isArray(result) ? result : result?.rows;
 
-    console.log("Query rows:", rows);
-
     if (rows && rows.length > 0) {
       const impressions = rows[0].impressions; 
-      console.log("Impressions found:", impressions);
       return impressions;
     } else {
-      console.log("No rows found, returning 0.");
       return 0;
     }
   } catch (error) {
@@ -386,7 +382,6 @@ async function getTotalImpressions(email) {
 
     const userRows = Array.isArray(userResult) ? userResult : userResult?.rows;
     if (!userRows || userRows.length === 0) {
-      console.log("No user found with the provided email.");
       return {
         totalJobs: 0,
         totalImpressions: 0,
@@ -415,8 +410,6 @@ async function getTotalImpressions(email) {
 
     const rows = Array.isArray(jobStatsResult) ? jobStatsResult : jobStatsResult?.rows;
 
-    console.log("Query rows:", rows);
-
     if (rows && rows.length > 0) {
       const {
         total_jobs = 0,
@@ -425,13 +418,6 @@ async function getTotalImpressions(email) {
         jobs_ok_false = 0,
       } = rows[0];
 
-      console.log("Job stats:", {
-        total_jobs,
-        total_impressions,
-        jobs_ok_true,
-        jobs_ok_false,
-      });
-
       return {
         totalJobs: total_jobs,
         totalImpressions: total_impressions,
@@ -439,7 +425,6 @@ async function getTotalImpressions(email) {
         jobsOkFalse: jobs_ok_false,
       };
     } else {
-      console.log("No rows found, returning defaults.");
       return {
         totalJobs: 0,
         totalImpressions: 0,
@@ -514,7 +499,6 @@ async function getAllCompanies() {
 
   try {
     const result = await executeQuery(query);
-    console.log(result);
     return result; 
   } catch (error) {
     console.error("Error fetching all companies:", error);
@@ -637,8 +621,6 @@ async function getCompanyJobDetails(company, searchParams, page) {
     }
     const companyDetails = companyDetailsResult[0];
     const companyId = companyDetails.id;
-    console.log('Query:', getJobsQuery);
-    console.log('Params:', [companyId, ...queryParams]);
 
     const jobsResult = await executeQuery(getJobsQuery, [companyId, ...queryParams]);
     return {
