@@ -98,7 +98,7 @@ router.post("/verify-payment", authMiddleware, async (req, res) => {
     await otpSenderMail(email, subject, message);
 
     res.json({
-      msg: "success",
+      msg: true,
       orderId: paypalOrderId,
       paymentStatus: "COMPLETED",
     });
@@ -113,7 +113,9 @@ router.post("/verify-payment", authMiddleware, async (req, res) => {
 
     await otpSenderMail(email, subject, message);
 
-    res.status(401).json({ error: "Failed to verify PayPal order" });
+    res
+      .status(401)
+      .json({ msg: false, error: "Failed to verify PayPal order" });
   }
 });
 
