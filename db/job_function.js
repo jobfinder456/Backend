@@ -62,6 +62,7 @@ async function getuserjobData(email, page) {
     const offset = (page - 1) * jobsPerPage; 
     const query = `
      SELECT 
+    jb_jobs.id,
     jb_jobs.job_title, 
     jb_jobs.is_ok, 
     jb_jobs.impressions, 
