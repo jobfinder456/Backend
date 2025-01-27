@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const axios = require("axios");
 const { otpSenderMail } = require("../db/mail"); // Assuming you use this for email notifications
+const { authMiddleware} = require("../auth/middleware")
 require("dotenv").config();
 
 // Helper function to get Razorpay access credentials
@@ -12,7 +13,7 @@ function getRazorpayAuth() {
 }
 
 // POST /create-subscription
-router.post("/create-subscription", async (req, res) => {
+router.post("/create-subscription", authMiddleware, async (req, res) => {
   const { plan_id, quantity } = req.body;
   const total_count = 12; // 12 months (1 year) subscription
 
@@ -58,10 +59,11 @@ router.post("/create-subscription", async (req, res) => {
 });
 
 // POST /verify-subscription
-router.post("/verify-subscription", async (req, res) => {
-  const { subscriptionId, email, plan_id } = req.body;
+router.post("/verify-subscription", authMiddleware, async (req, res) => {
+  const { subscriptionId, plan_id } = req.body;
+  const email = req.email
 
-  if (!subscriptionId) {
+  if (!subscriptionId || !plan_id) {
     return res.status(400).json({ success: false, message: "Subscription ID is required." });
   }
 
