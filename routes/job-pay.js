@@ -3,6 +3,7 @@ const router = express.Router();
 const axios = require("axios");
 const { otpSenderMail } = require("../db/mail"); // Assuming you use this for email notifications
 const { authMiddleware} = require("../auth/middleware")
+const { updateCredits} = require("../db/user-pay")
 require("dotenv").config();
 
 // Helper function to get Razorpay access credentials
