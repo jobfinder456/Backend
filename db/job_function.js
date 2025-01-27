@@ -375,7 +375,6 @@ async function getJobImpressions(jobId) {
     throw new Error("Database query failed");
   }
 }
-
 async function getTotalImpressions(email) {
   try {
     // Query to get user ID and credits
@@ -428,6 +427,14 @@ async function getTotalImpressions(email) {
         jobs_ok_false = 0,
       } = rows[0];
 
+      console.log({
+        totalJobs: total_jobs,
+        totalImpressions: total_impressions,
+        jobsOkTrue: jobs_ok_true,
+        jobsOkFalse: jobs_ok_false,
+        credits: credits || 0, // Add credits to the response
+      });
+
       return {
         totalJobs: total_jobs,
         totalImpressions: total_impressions,
@@ -449,6 +456,7 @@ async function getTotalImpressions(email) {
     throw new Error("Database query failed");
   }
 }
+
 
 
 async function insertResume(name, email, fileLink, position) {
