@@ -58,7 +58,7 @@ router.post("/create-subscription", async (req, res) => {
 
 // POST /verify-subscription
 router.post("/verify-subscription", async (req, res) => {
-  const { subscriptionId, email } = req.body;
+  const { subscriptionId, email, plan_id } = req.body;
 
   if (!subscriptionId) {
     return res.status(400).json({ success: false, message: "Subscription ID is required." });
@@ -78,6 +78,27 @@ router.post("/verify-subscription", async (req, res) => {
 
     // Step 2: Check subscription status
     if (subscriptionStatus === "active") {
+      if(plan_id="plan_PoTHJFNlL9SzHX"){
+      const result = await updateCredits(email, 10);
+
+      if (!result) {
+          return res.status(404).json({
+              success: false,
+              message: "User with the given email not found.",
+          });
+      }
+    }
+    
+    if(plan_id="plan_PoTI8RZDB76ZyV"){
+      const result = await updateCredits(email, 25)
+      if (!result) {
+          return res.status(404).json({
+              success: false,
+              message: "User with the given email not found.",
+          });
+      }
+    }
+    
       const subject = "Subscription Activated";
       const message = `Dear User,\n\nYour subscription (ID: ${subscriptionId}) has been successfully activated.\n\nThanks,\nGetJobs Team`;
 

@@ -69,8 +69,7 @@ async function getuserjobData(email, page) {
         jb_jobs.is_ok, 
         jb_jobs.impressions, 
         jb_jobs.last_update,
-        company_profile.company_name AS company_name,
-        jb_users.credits
+        company_profile.company_name AS company_name
       FROM jb_users
       JOIN company_profile ON jb_users.id = company_profile.jb_user_id
       JOIN jb_jobs ON company_profile.id = jb_jobs.company_profile_id
@@ -81,7 +80,7 @@ async function getuserjobData(email, page) {
     const jobResult = await executeQuery(query, [email, jobsPerPage, offset]);
 
     if (jobResult.length === 0) {
-      return { jobResult: [], hasMore: false, credits: 0 }; 
+      return { jobResult: [], hasMore: false }; 
     }
 
     // Assuming `credits` is the same for all jobs retrieved (because it's tied to the user)
@@ -379,9 +378,9 @@ async function getJobImpressions(jobId) {
 
 async function getTotalImpressions(email) {
   try {
-
+    // Query to get user ID and credits
     const userQuery = `
-      SELECT id 
+      SELECT id, credits
       FROM jb_users 
       WHERE email = $1
     `;
@@ -394,10 +393,14 @@ async function getTotalImpressions(email) {
         totalImpressions: 0,
         jobsOkTrue: 0,
         jobsOkFalse: 0,
+        credits: 0, // Include default value for credits
       };
     }
-    const userId = userRows[0]?.id;
 
+    const userId = userRows[0]?.id;
+    const credits = userRows[0]?.credits; // Get the credits from the user table
+
+    // Query to get job stats
     const jobStatsQuery = `
       SELECT 
           COUNT(j.id) AS total_jobs,                           -- Total number of jobs
@@ -430,6 +433,7 @@ async function getTotalImpressions(email) {
         totalImpressions: total_impressions,
         jobsOkTrue: jobs_ok_true,
         jobsOkFalse: jobs_ok_false,
+        credits: credits || 0, // Add credits to the response
       };
     } else {
       return {
@@ -437,6 +441,7 @@ async function getTotalImpressions(email) {
         totalImpressions: 0,
         jobsOkTrue: 0,
         jobsOkFalse: 0,
+        credits: credits || 0, // Add credits to the response even if job stats are empty
       };
     }
   } catch (error) {
@@ -444,6 +449,7 @@ async function getTotalImpressions(email) {
     throw new Error("Database query failed");
   }
 }
+
 
 async function insertResume(name, email, fileLink, position) {
   try {

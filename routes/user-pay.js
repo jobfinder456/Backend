@@ -2,41 +2,6 @@ const express = require("express");
 const router = express.Router();
 const { updateCredits, getUserCredits, updateJobStatus, deductUserCredits, addUserCredits } = require("../db/user-pay"); // Assuming queries file for database operations
 
-router.post("/credits", async (req, res) => {
-    const { email, credits } = req.body;
-
-    if (!email || credits === undefined) {
-        return res.status(400).json({
-            success: false,
-            message: "Email and credits are required fields.",
-        });
-    }
-
-    try {
-        const result = await updateCredits(email, credits);
-
-        if (!result) {
-            return res.status(404).json({
-                success: false,
-                message: "User with the given email not found.",
-            });
-        }
-
-        return res.status(200).json({
-            success: true,
-            message: "Credits updated successfully.",
-            user: result, // Return the updated user data
-        });
-    } catch (error) {
-        console.error("Error updating credits:", error);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to update credits.",
-            error: error.message,
-        });
-    }
-});
-
 router.post("/toggle", async (req, res) => {
     const { job_id, is_ok, email } = req.body;
   
@@ -54,7 +19,7 @@ router.post("/toggle", async (req, res) => {
   */
       if (is_ok) {
         // If is_ok is true and the user has enough credits
-        if (userCredits > 0) {
+        if (userCredits > 0 ) {
           await updateJobStatus(job_id, is_ok); // Update job status
           await deductUserCredits(email); // Deduct one credit
           return res.status(200).json({ success: true, message: "Job updated and credits deducted successfully." });

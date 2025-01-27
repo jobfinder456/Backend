@@ -187,7 +187,6 @@ router.get("/jobs", authMiddleware, async (req, res) => {
     res.status(200).json({
       all: {jobResult : jobResult},
       hasMore,
-      credits,
       currentPage: page,
     });
   } catch (error) {
@@ -196,13 +195,13 @@ router.get("/jobs", authMiddleware, async (req, res) => {
   }
 });
 
-router.get("/user/impressions", authMiddleware, async (req, res) => {
-  const email  = req.email;
+router.get("/user/impressions", async (req, res) => {
+  const email  = "nikhilchopra1705@gmail.com";
 
   try {
     const totalImpressions = await getTotalImpressions(email);
 
-    res.status(200).json({ success: true, total_impressions: totalImpressions.totalImpressions,total_jobs:totalImpressions.totalJobs,jobs_ok_true:totalImpressions.jobsOkTrue,jobs_ok_false:totalImpressions.jobsOkFalse });
+    res.status(200).json({ success: true, total_impressions: totalImpressions.totalImpressions,total_jobs:totalImpressions.totalJobs,jobs_ok_true:totalImpressions.jobsOkTrue,jobs_ok_false:totalImpressions.jobsOkFalse, credits:totalImpressions.credits });
   } catch (error) {
     console.error("Error fetching impressions:", error);
     res.status(500).json({ success: false, message: "Could not fetch impressions" });
