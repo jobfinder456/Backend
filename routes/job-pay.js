@@ -1,77 +1,46 @@
 const express = require("express");
 const router = express.Router();
 const axios = require("axios");
-const { otpSenderMail } = require("../db/mail");
-const { authMiddleware } = require("../auth/middleware");
-
+const { otpSenderMail } = require("../db/mail"); // Assuming you use this for email notifications
 require("dotenv").config();
 
-// Helper function to get PayPal access token
-async function getPayPalAccessToken() {
-  const auth = Buffer.from(
-    `${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`
-  ).toString("base64");
-
-  const tokenResponse = await axios.post(
-    "https://api-m.paypal.com/v1/oauth2/token",
-    "grant_type=client_credentials",
-    {
-      headers: {
-        Authorization: `Basic ${auth}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-    }
-  );
-
-  return tokenResponse.data.access_token;
+// Helper function to get Razorpay access credentials
+function getRazorpayAuth() {
+  return `Basic ${Buffer.from(
+    `${process.env.RAZORPAY_TEST_KEY_ID}:${process.env.RAZORPAY_TEST_KEY_SECRET}`
+  ).toString("base64")}`;
 }
 
 // POST /create-subscription
 router.post("/create-subscription", async (req, res) => {
-  const { plan_id, card } = req.body;
+  const { plan_id, total_count, quantity } = req.body;
 
-  if (!plan_id || !card) {
+  if (!plan_id || !total_count || !quantity) {
     return res.status(400).json({
       success: false,
-      message: "Plan ID and card details are required.",
+      message: "Plan ID, total count, and quantity are required.",
     });
   }
 
   try {
-    // Step 1: Get PayPal access token
-    const accessToken = await getPayPalAccessToken();
-
-    // Step 2: Create subscription with card details
-    const url = "https://api-m.paypal.com/v1/billing/subscriptions";
+    // Step 1: Create subscription with Razorpay
+    const url = "https://api.razorpay.com/v1/subscriptions";
     const response = await axios.post(
       url,
       {
         plan_id,
-        payer: {
-          payment_method: "credit_card",
-          funding_instruments: [
-            {
-              credit_card: {
-                number: card.number,
-                type: card.type, // "VISA", "MASTERCARD", etc.
-                expire_month: card.expire_month,
-                expire_year: card.expire_year,
-                cvv2: card.cvv,
-                first_name: card.first_name,
-                last_name: card.last_name,
-              },
-            },
-          ],
-        },
+        total_count, // Number of billing cycles (e.g., 12 months)
+        quantity, // Units of the plan
       },
       {
         headers: {
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: getRazorpayAuth(),
           "Content-Type": "application/json",
         },
       }
     );
 
+    // Step 2: Return success response
     res.status(201).json({
       success: true,
       subscription_id: response.data.id,
@@ -89,30 +58,26 @@ router.post("/create-subscription", async (req, res) => {
 
 // POST /verify-subscription
 router.post("/verify-subscription", async (req, res) => {
-  const { subscriptionId , email } = req.body;
- // const email = req.email; // Assuming email is extracted using authMiddleware
+  const { subscriptionId, email } = req.body;
 
   if (!subscriptionId) {
     return res.status(400).json({ success: false, message: "Subscription ID is required." });
   }
 
   try {
-    // Step 1: Get PayPal access token
-    const accessToken = await getPayPalAccessToken();
-
-    // Step 2: Verify the subscription using the PayPal API
-    const url = `https://api-m.paypal.com/v1/billing/subscriptions/${subscriptionId}`;
+    // Step 1: Verify subscription status with Razorpay
+    const url = `https://api.razorpay.com/v1/subscriptions/${subscriptionId}`;
     const response = await axios.get(url, {
       headers: {
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: getRazorpayAuth(),
         "Content-Type": "application/json",
       },
     });
 
     const subscriptionStatus = response.data.status;
 
-    // Step 3: Check subscription status
-    if (subscriptionStatus === "ACTIVE") {
+    // Step 2: Check subscription status
+    if (subscriptionStatus === "active") {
       const subject = "Subscription Activated";
       const message = `Dear User,\n\nYour subscription (ID: ${subscriptionId}) has been successfully activated.\n\nThanks,\nGetJobs Team`;
 
@@ -126,7 +91,6 @@ router.post("/verify-subscription", async (req, res) => {
         subscriptionStatus,
       });
     } else {
-      // Handle non-active subscription statuses
       const subject = "Subscription Activation Failure";
       const message = `Dear User,\n\nYour subscription (ID: ${subscriptionId}) could not be activated. Current status: ${subscriptionStatus}.\n\nThanks,\nGetJobs Team`;
 
@@ -140,7 +104,7 @@ router.post("/verify-subscription", async (req, res) => {
       });
     }
   } catch (error) {
-    console.error("Error verifying PayPal subscription:", error.response?.data || error.message);
+    console.error("Error verifying Razorpay subscription:", error.response?.data || error.message);
 
     const subject = "Subscription Verification Failure";
     const message = `Dear User,\n\nWe encountered an error while verifying your subscription (ID: ${subscriptionId}). Please contact support for assistance.\n\nThanks,\nGetJobs Team`;

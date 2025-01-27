@@ -182,11 +182,12 @@ router.get("/jobs", authMiddleware, async (req, res) => {
     }
 
     // Fetch jobs with pagination
-    const { jobResult, hasMore } = await getuserjobData(email, page);
+    const { jobResult, hasMore ,credits} = await getuserjobData(email, page);
 
     res.status(200).json({
       all: {jobResult : jobResult},
       hasMore,
+      credits,
       currentPage: page,
     });
   } catch (error) {

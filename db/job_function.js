@@ -20,7 +20,7 @@ async function executeQuery(query, values = []) {
     client.release();
   }
 }
-
+/*
 async function updateJobStatus() {
   const query = `
     UPDATE jb_jobs 
@@ -42,6 +42,7 @@ async function updateJobStatus() {
 cron.schedule("0 0 * * *", async () => {
   await updateJobStatus();
 });
+*/
 
 async function jobUpdate(jobIds) {
   const queryText =
@@ -60,33 +61,39 @@ async function getuserjobData(email, page) {
   try {
     const jobsPerPage = 20; 
     const offset = (page - 1) * jobsPerPage; 
+
     const query = `
-     SELECT 
-    jb_jobs.id,
-    jb_jobs.job_title, 
-    jb_jobs.is_ok, 
-    jb_jobs.impressions, 
-    jb_jobs.last_update,
-    company_profile.company_name AS company_name
-FROM jb_users
-JOIN company_profile ON jb_users.id = company_profile.jb_user_id
-JOIN jb_jobs ON company_profile.id = jb_jobs.company_profile_id
-WHERE jb_users.email = $1
-LIMIT $2 OFFSET $3;
+      SELECT 
+        jb_jobs.id,
+        jb_jobs.job_title, 
+        jb_jobs.is_ok, 
+        jb_jobs.impressions, 
+        jb_jobs.last_update,
+        company_profile.company_name AS company_name,
+        jb_users.credits
+      FROM jb_users
+      JOIN company_profile ON jb_users.id = company_profile.jb_user_id
+      JOIN jb_jobs ON company_profile.id = jb_jobs.company_profile_id
+      WHERE jb_users.email = $1
+      LIMIT $2 OFFSET $3;
     `;
 
     const jobResult = await executeQuery(query, [email, jobsPerPage, offset]);
 
     if (jobResult.length === 0) {
-      return { jobResult: [], hasMore: false }; 
+      return { jobResult: [], hasMore: false, credits: 0 }; 
     }
 
-    return { jobResult, hasMore: jobResult.length === jobsPerPage }; 
+    // Assuming `credits` is the same for all jobs retrieved (because it's tied to the user)
+    const credits = jobResult[0].credits;
+
+    return { jobResult, hasMore: jobResult.length === jobsPerPage, credits }; 
   } catch (error) {
     console.error("Error executing query:", error);
-    return { jobResult: [], hasMore: false };
+    return { jobResult: [], hasMore: false, credits: 0 };
   }
 }
+
 
 async function getData(offset, limit, searchTerm, location, remote, categories, level, compensation, commitment) {
   try {
@@ -440,19 +447,30 @@ async function getTotalImpressions(email) {
 
 async function insertResume(name, email, fileLink, position) {
   try {
+    // Check if the email already exists
+    const checkQuery = `SELECT email FROM user_details WHERE email = $1;`;
+    const checkResult = await executeQuery(checkQuery, [email]);
 
-    const query = `
+    if (checkResult.rows > 0) {
+      // Email already exists
+      return {
+        success: false,
+        error: "Email already exists.",
+      };
+    }
+
+    // Email does not exist, proceed to insert
+    const insertQuery = `
       INSERT INTO user_details (name, email, s3_resume_url, position)
       VALUES ($1, $2, $3, $4)
       RETURNING *;
     `;
     const values = [name, email, fileLink, position];
-
-    const result = await pool.query(query, values);
+    const insertResult = await executeQuery(insertQuery, values);
 
     return {
       success: true,
-      data: result.rows[0], 
+      data: insertResult[0],
     };
   } catch (error) {
     console.error("Error inserting resume into database:", error);

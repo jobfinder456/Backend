@@ -73,7 +73,7 @@ router.post("/resume", async(req,res)=>{
           message: "Data inserted successfully",
         });
       } else {
-        return res.status(400).json({ error: result.error });
+        return res.status(400).json({ result});
       }
     } catch (error) {
         console.error("Error during profile creation:", error);
