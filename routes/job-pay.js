@@ -81,7 +81,7 @@ router.post("/verify-subscription", authMiddleware, async (req, res) => {
 
     // Step 2: Check subscription status
     if (subscriptionStatus === "active") {
-      if(plan_id="plan_Po2Z7yEL8Z7Qm1"){
+      if(plan_id==="plan_Po2Z7yEL8Z7Qm1"){
         const result = await updateCredits(email, 1000);
 
         if (!result) {
@@ -91,7 +91,7 @@ router.post("/verify-subscription", authMiddleware, async (req, res) => {
             });
         }
       }
-      if(plan_id="plan_PoTHJFNlL9SzHX"){
+      if(plan_id==="plan_PoTHJFNlL9SzHX"){
       const result = await updateCredits(email, 10);
 
       if (!result) {
@@ -102,7 +102,7 @@ router.post("/verify-subscription", authMiddleware, async (req, res) => {
       }
     }
     
-    if(plan_id="plan_PoTI8RZDB76ZyV"){
+    if(plan_id==="plan_PoTI8RZDB76ZyV"){
       const result = await updateCredits(email, 25)
       if (!result) {
           return res.status(404).json({
