@@ -13,9 +13,10 @@ function getRazorpayAuth() {
 
 // POST /create-subscription
 router.post("/create-subscription", async (req, res) => {
-  const { plan_id, total_count, quantity } = req.body;
+  const { plan_id, quantity } = req.body;
+  const total_count = 12; // 12 months (1 year) subscription
 
-  if (!plan_id || !total_count || !quantity) {
+  if (!plan_id || !quantity) {
     return res.status(400).json({
       success: false,
       message: "Plan ID, total count, and quantity are required.",
