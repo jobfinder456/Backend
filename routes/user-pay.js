@@ -3,7 +3,7 @@ const router = express.Router();
 const { authMiddleware} = require("../auth/middleware")
 const { getUserCredits, updateJobStatus, deductUserCredits, addUserCredits } = require("../db/user-pay"); // Assuming queries file for database operations
 
-router.post("/toggle", authMiddleware, async (req, res) => {
+router.put("/toggle", authMiddleware, async (req, res) => {
     const { job_id, is_ok } = req.body;
   const email = req.email
 
