@@ -47,11 +47,11 @@ router.post("/toggle", async (req, res) => {
     try {
       // Get user credits
       const userCredits = await getUserCredits(email);
-  
-      if (userCredits === null) {
+  /*
+      if (userCredits === null ) {
         return res.status(404).json({ success: false, message: "User not found." });
       }
-  
+  */
       if (is_ok) {
         // If is_ok is true and the user has enough credits
         if (userCredits > 0) {
