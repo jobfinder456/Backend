@@ -218,6 +218,7 @@ router.post("/cancel-subscription", authMiddleware, async (req, res) => {
 
 router.post("/upgrade-subscription", authMiddleware, async (req, res) => {
   const { subscription_id, new_plan_id, quantity, total_count } = req.body;
+  const email = req.email
 
   if (!subscription_id || !new_plan_id) {
       return res.status(400).json({
@@ -276,7 +277,11 @@ router.post("/upgrade-subscription", authMiddleware, async (req, res) => {
               }
           }
       );
-
+      const newSubscriptionId = newSubscription.data.id;
+      await executeQuery(
+        `UPDATE jb_users SET subscription_id = $1 WHERE email = $2`,
+        [newSubscriptionId, email]
+    );
       return res.status(200).json({
           success: true,
           message: "Subscription upgraded successfully.",
@@ -303,7 +308,7 @@ router.get("/get-subscription", authMiddleware, async (req, res) => {
 
     try {
         // SQL query to fetch subscription_id from jb_users table
-        const query = `SELECT subscription_id FROM jb_users WHERE email = $1`;
+        const query = `SELECT sub_id FROM jb_users WHERE email = $1`;
         const values = [email];
 
         const result = await executeQuery(query, values); // Execute the query
