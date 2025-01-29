@@ -21,16 +21,21 @@ async function executeQuery(query, values = []) {
   }
 }
 
-const updateCredits = async (email, credits) => {
+const updateCredits = async (email, credits, subscriptionId, plan_id) => {
   try {
-      // SQL query to update credits
-      const query = `UPDATE jb_users SET credits = $1 WHERE email = $2 RETURNING *`;
-      const values = [credits, email];
+      // SQL query to update credits, subscription_id, and plan_id
+      const query = `
+        UPDATE jb_users 
+        SET credits = $1, subscription_id = $2, plan_id = $3
+        WHERE email = $4
+        RETURNING *`;
+      
+      const values = [credits, subscriptionId, plan_id, email];
 
       const result = await executeQuery(query, values); // Execute the query
 
       // Check if the user exists and was updated
-      if (!result) {
+      if (!result || result.length === 0) {
           return null; // No user found with the provided email
       }
 
@@ -41,6 +46,7 @@ const updateCredits = async (email, credits) => {
       throw error; // Re-throw the error to be caught in the route handler
   }
 };
+
 
 async function getUserCredits(email) {
   const query = "SELECT credits FROM jb_users WHERE email = $1";

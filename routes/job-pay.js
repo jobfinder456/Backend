@@ -6,6 +6,26 @@ const { authMiddleware} = require("../auth/middleware")
 const { updateCredits} = require("../db/user-pay")
 require("dotenv").config();
 
+
+const pool = new Pool({
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT,
+});
+
+async function executeQuery(query, values = []) {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(query, values);
+    return result.rows;
+  } finally {
+    client.release();
+  }
+}
+
+
 // Helper function to get Razorpay access credentials
 function getRazorpayAuth() {
   return `Basic ${Buffer.from(
@@ -14,7 +34,7 @@ function getRazorpayAuth() {
 }
 
 // POST /create-subscription
-router.post("/create-subscription", authMiddleware, async (req, res) => {
+router.post("/create-subscription", async (req, res) => {
   const { plan_id, quantity } = req.body;
   const total_count = 12; // 12 months (1 year) subscription
 
@@ -42,8 +62,6 @@ router.post("/create-subscription", authMiddleware, async (req, res) => {
         },
       }
     );
-
-    // Step 2: Return success response
     res.status(201).json({
       success: true,
       subscription_id: response.data.id,
@@ -83,7 +101,7 @@ router.post("/verify-subscription", authMiddleware, async (req, res) => {
     // Step 2: Check subscription status
     if (subscriptionStatus === "active") {
       if(plan_id==="plan_Po2Z7yEL8Z7Qm1"){
-        const result = await updateCredits(email, 1000);
+        const result = await updateCredits(email, 1000, subscriptionId, plan_id);
 
         if (!result) {
             return res.status(404).json({
@@ -93,7 +111,7 @@ router.post("/verify-subscription", authMiddleware, async (req, res) => {
         }
       }
       if(plan_id==="plan_PoTHJFNlL9SzHX"){
-      const result = await updateCredits(email, 10);
+      const result = await updateCredits(email, 10, subscriptionId, plan_id);
 
       if (!result) {
           return res.status(404).json({
@@ -104,7 +122,7 @@ router.post("/verify-subscription", authMiddleware, async (req, res) => {
     }
     
     if(plan_id==="plan_PoTI8RZDB76ZyV"){
-      const result = await updateCredits(email, 25)
+      const result = await updateCredits(email, 25, subscriptionId, plan_id)
       if (!result) {
           return res.status(404).json({
               success: false,
@@ -154,5 +172,142 @@ router.post("/verify-subscription", authMiddleware, async (req, res) => {
     });
   }
 });
+
+router.post("/cancel-subscription", async (req, res) => {
+  const { subscription_id } = req.body;
+
+  if (!subscription_id) {
+      return res.status(400).json({
+          success: false,
+          message: "Subscription ID is required.",
+      });
+  }
+
+  try {
+      // Cancel the subscription
+      const response = await razorpay.subscriptions.cancel(subscription_id);
+
+      return res.status(200).json({
+          success: true,
+          message: "Subscription canceled successfully.",
+          subscription: response,
+      });
+  } catch (error) {
+      console.error("Error canceling subscription:", error);
+      return res.status(500).json({
+          success: false,
+          message: "Failed to cancel subscription.",
+          error: error.message,
+      });
+  }
+});
+
+router.post("/upgrade-subscription", async (req, res) => {
+  const { subscription_id, new_plan_id, quantity, total_count } = req.body;
+
+  if (!subscription_id || !new_plan_id) {
+      return res.status(400).json({
+          success: false,
+          message: "Current subscription ID and new plan ID are required.",
+      });
+  }
+
+  try {
+      // Step 1: Fetch the current subscription to ensure it exists
+      const existingSubscription = await axios.get(
+          `https://api.razorpay.com/v1/subscriptions/${subscription_id}`,
+          {
+              auth: {
+                  username: process.env.RAZORPAY_KEY_ID,
+                  password: process.env.RAZORPAY_KEY_SECRET
+              }
+          }
+      );
+
+      if (!existingSubscription.data) {
+          return res.status(404).json({
+              success: false,
+              message: "Current subscription not found."
+          });
+      }
+
+      // Step 2: Cancel the current subscription
+      await axios.post(
+          `https://api.razorpay.com/v1/subscriptions/${subscription_id}/cancel`,
+          {},
+          {
+              auth: {
+                  username: process.env.RAZORPAY_KEY_ID,
+                  password: process.env.RAZORPAY_KEY_SECRET
+              }
+          }
+      );
+
+      // Step 3: Create a new subscription for the upgraded plan
+      const newSubscription = await axios.post(
+          `https://api.razorpay.com/v1/subscriptions`,
+          {
+              plan_id: new_plan_id,
+              total_count: total_count || 12, // Defaults to 12 cycles if not provided
+              customer_notify: 1,
+              quantity: quantity || 1, // Defaults to 1 if not provided
+              start_at: Math.floor(Date.now() / 1000) // Start immediately
+          },
+          {
+              auth: {
+                  username: process.env.RAZORPAY_KEY_ID,
+                  password: process.env.RAZORPAY_KEY_SECRET
+              }
+          }
+      );
+
+      return res.status(200).json({
+          success: true,
+          message: "Subscription upgraded successfully.",
+          subscription: newSubscription.data,
+      });
+
+  } catch (error) {
+      console.error("Error upgrading subscription:", error.response?.data || error.message);
+      return res.status(500).json({
+          success: false,
+          message: "Failed to upgrade subscription.",
+          error: error.response?.data || error.message,
+      });
+  }
+});
+
+router.get("/get-subscription", authMiddleware ,async (req, res) => {
+  const  email  = req.email;
+
+  if (!email) {
+      return res.status(400).json({ success: false, message: "Email is required." });
+  }
+
+  try {
+      // SQL query to fetch subscription_id from jb_users table
+      const query = `SELECT subscription_id FROM jb_users WHERE email = $1`;
+      const values = [email];
+
+      const result = await executeQuery(query, values); // Execute the query
+
+      if (!result || result.length === 0) {
+          return res.status(404).json({ success: false, message: "Subscription not found for this email." });
+      }
+
+      return res.status(200).json({
+          success: true,
+          subscription_id: result[0].subscription_id
+      });
+  } catch (error) {
+      console.error("Error fetching subscription:", error);
+      return res.status(500).json({
+          success: false,
+          message: "Failed to fetch subscription.",
+          error: error.message
+      });
+  }
+});
+
 
 module.exports = router;
