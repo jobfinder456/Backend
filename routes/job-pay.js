@@ -277,37 +277,68 @@ router.post("/upgrade-subscription", async (req, res) => {
   }
 });
 
-router.get("/get-subscription", authMiddleware ,async (req, res) => {
-  const  email  = req.email;
+const axios = require("axios");
 
-  if (!email) {
-      return res.status(400).json({ success: false, message: "Email is required." });
-  }
+router.get("/get-subscription", authMiddleware, async (req, res) => {
+    const email = req.email;
 
-  try {
-      // SQL query to fetch subscription_id from jb_users table
-      const query = `SELECT subscription_id FROM jb_users WHERE email = $1`;
-      const values = [email];
+    if (!email) {
+        return res.status(400).json({ success: false, message: "Email is required." });
+    }
 
-      const result = await executeQuery(query, values); // Execute the query
+    try {
+        // SQL query to fetch subscription_id from jb_users table
+        const query = `SELECT subscription_id FROM jb_users WHERE email = $1`;
+        const values = [email];
 
-      if (!result || result.length === 0) {
-          return res.status(404).json({ success: false, message: "Subscription not found for this email." });
-      }
+        const result = await executeQuery(query, values); // Execute the query
 
-      return res.status(200).json({
-          success: true,
-          subscription_id: result[0].subscription_id
-      });
-  } catch (error) {
-      console.error("Error fetching subscription:", error);
-      return res.status(500).json({
-          success: false,
-          message: "Failed to fetch subscription.",
-          error: error.message
-      });
-  }
+        if (!result ) {
+            return res.status(404).json({ success: false, message: "Subscription not found for this email." });
+        }
+
+        const subscriptionId = result[0].subscription_id;
+
+        // Fetch subscription details from Razorpay API
+        const razorpayResponse = await axios.get(
+            `https://api.razorpay.com/v1/subscriptions/${subscriptionId}`,
+            {
+                auth: {
+                    username: process.env.RAZORPAY_TEST_KEY_ID,   // Razorpay API Key
+                    password: process.env.RAZORPAY_TEST_KEY_SECRET,   // Razorpay API Secret
+                },
+            }
+        );
+
+        const { plan_id, customer_id, current_start, current_end, charge_at, end_at } = razorpayResponse.data;
+
+        let plan_name = "Unknown"; 
+        if (plan_id === "plan_PoTHJFNlL9SzHX") {
+            plan_name = "Starter";
+        } else if (plan_id === "plan_PoTI8RZDB76ZyV") {
+            plan_name = "Companies";
+        }
+
+        return res.status(200).json({
+            success: true,
+            subscription_id: subscriptionId,
+            plan_name,
+            customer_id,
+            current_start,
+            current_end,
+            charge_at,
+            end_at,
+        });
+    } catch (error) {
+        console.error("Error fetching subscription:", error.response?.data || error.message);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to fetch subscription.",
+            error: error.response?.data || error.message,
+        });
+    }
 });
+
 
 
 module.exports = router;
