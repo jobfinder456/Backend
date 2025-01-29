@@ -4,6 +4,7 @@ const axios = require("axios");
 const { otpSenderMail } = require("../db/mail"); // Assuming you use this for email notifications
 const { authMiddleware} = require("../auth/middleware")
 const { updateCredits} = require("../db/user-pay")
+const { Pool } = require("pg"); 
 require("dotenv").config();
 
 
@@ -213,13 +214,17 @@ router.post("/upgrade-subscription", async (req, res) => {
   }
 
   try {
+      // Debugging: Log the subscription ID and new plan ID
+      console.log("Subscription ID:", subscription_id);
+      console.log("New Plan ID:", new_plan_id);
+
       // Step 1: Fetch the current subscription to ensure it exists
       const existingSubscription = await axios.get(
           `https://api.razorpay.com/v1/subscriptions/${subscription_id}`,
           {
               auth: {
-                  username: process.env.RAZORPAY_KEY_ID,
-                  password: process.env.RAZORPAY_KEY_SECRET
+                  username: process.env.RAZORPAY_TEST_KEY_ID,  // Ensure you're using the correct key
+                  password: process.env.RAZORPAY_TEST_KEY_SECRET
               }
           }
       );
@@ -231,13 +236,16 @@ router.post("/upgrade-subscription", async (req, res) => {
           });
       }
 
+      // Debugging: Log the fetched subscription details
+      console.log("Existing Subscription:", existingSubscription.data);
+
       // Step 2: Cancel the current subscription
       await axios.post(
           `https://api.razorpay.com/v1/subscriptions/${subscription_id}/cancel`,
           {},
           {
               auth: {
-                  username: process.env.RAZORPAY_KEY_ID,
+                  username: process.env.RAZORPAY_KEY_ID,  // Ensure you're using the correct key
                   password: process.env.RAZORPAY_KEY_SECRET
               }
           }
@@ -255,7 +263,7 @@ router.post("/upgrade-subscription", async (req, res) => {
           },
           {
               auth: {
-                  username: process.env.RAZORPAY_KEY_ID,
+                  username: process.env.RAZORPAY_KEY_ID,  // Ensure you're using the correct key
                   password: process.env.RAZORPAY_KEY_SECRET
               }
           }
@@ -277,7 +285,6 @@ router.post("/upgrade-subscription", async (req, res) => {
   }
 });
 
-const axios = require("axios");
 
 router.get("/get-subscription", authMiddleware, async (req, res) => {
     const email = req.email;
