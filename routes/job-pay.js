@@ -174,7 +174,7 @@ router.post("/verify-subscription", authMiddleware, async (req, res) => {
   }
 });
 
-router.post("/cancel-subscription", async (req, res) => {
+router.post("/cancel-subscription", authMiddleware, async (req, res) => {
   const { subscription_id } = req.body;
 
   if (!subscription_id) {
@@ -186,12 +186,24 @@ router.post("/cancel-subscription", async (req, res) => {
 
   try {
       // Cancel the subscription
-      const response = await razorpay.subscriptions.cancel(subscription_id);
+      const response = await axios.post(
+        `https://api.razorpay.com/v1/subscriptions/${subscription_id}/cancel`,
+        {},
+        {
+            auth: {
+                username: process.env.RAZORPAY_TEST_KEY_ID,  // Ensure you're using the correct key
+                password: process.env.RAZORPAY_TEST_KEY_SECRET
+            }
+        }
+    );
+
+      // Extract the data from the response object
+      const responseData = response.data;  // Get only the 'data' from the response
 
       return res.status(200).json({
           success: true,
           message: "Subscription canceled successfully.",
-          subscription: response,
+          subscription: responseData,  // Return the extracted 'data'
       });
   } catch (error) {
       console.error("Error canceling subscription:", error);
@@ -203,7 +215,8 @@ router.post("/cancel-subscription", async (req, res) => {
   }
 });
 
-router.post("/upgrade-subscription", async (req, res) => {
+
+router.post("/upgrade-subscription", authMiddleware, async (req, res) => {
   const { subscription_id, new_plan_id, quantity, total_count } = req.body;
 
   if (!subscription_id || !new_plan_id) {
@@ -236,22 +249,18 @@ router.post("/upgrade-subscription", async (req, res) => {
           });
       }
 
-      // Debugging: Log the fetched subscription details
-      console.log("Existing Subscription:", existingSubscription.data);
-
       // Step 2: Cancel the current subscription
       await axios.post(
           `https://api.razorpay.com/v1/subscriptions/${subscription_id}/cancel`,
           {},
           {
               auth: {
-                  username: process.env.RAZORPAY_KEY_ID,  // Ensure you're using the correct key
-                  password: process.env.RAZORPAY_KEY_SECRET
+                  username: process.env.RAZORPAY_TEST_KEY_ID,  // Ensure you're using the correct key
+                  password: process.env.RAZORPAY_TEST_KEY_SECRET
               }
           }
       );
 
-      // Step 3: Create a new subscription for the upgraded plan
       const newSubscription = await axios.post(
           `https://api.razorpay.com/v1/subscriptions`,
           {
@@ -259,12 +268,11 @@ router.post("/upgrade-subscription", async (req, res) => {
               total_count: total_count || 12, // Defaults to 12 cycles if not provided
               customer_notify: 1,
               quantity: quantity || 1, // Defaults to 1 if not provided
-              start_at: Math.floor(Date.now() / 1000) // Start immediately
           },
           {
               auth: {
-                  username: process.env.RAZORPAY_KEY_ID,  // Ensure you're using the correct key
-                  password: process.env.RAZORPAY_KEY_SECRET
+                  username: process.env.RAZORPAY_TEST_KEY_ID,  // Ensure you're using the correct key
+                  password: process.env.RAZORPAY_TEST_KEY_SECRET
               }
           }
       );
