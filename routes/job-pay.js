@@ -328,6 +328,7 @@ router.get("/get-subscription", authMiddleware, async (req, res) => {
 
         return res.status(200).json({
             success: true,
+            email: email,
             subscription_id: subscriptionId,
             plan_name,
             customer_id,
