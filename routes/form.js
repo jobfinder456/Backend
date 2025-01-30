@@ -111,7 +111,7 @@ router.get("/profile", authMiddleware, async (req, res) => {
       return res.status(404).json({ error: "No profiles found for this user" });
     }
 
-    return res.status(200).json({ profiles });
+    return res.status(200).json( profiles );
   } catch (error) {
     console.error("Error fetching profiles:", error);
     return res.status(500).json({ error: "Internal server error" });
