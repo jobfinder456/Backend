@@ -44,6 +44,24 @@ cron.schedule("0 0 * * *", async () => {
 });
 */
 
+cron.schedule('0 0 * * *', async () => {
+  try {
+      // Query to find users with expired subscriptions
+      const query = `
+          UPDATE jb_users
+          SET credits = 0
+          WHERE sub_expiry <= NOW() AND credits > 0;
+      `;
+      
+      // Execute the query
+      await client.query(query);
+
+      console.log("Credits removed for expired subscriptions.");
+  } catch (error) {
+      console.error("Error removing credits:", error);
+  }
+});
+
 async function jobUpdate(jobIds) {
   const queryText =
     "UPDATE jb_jobs SET is_ok = TRUE, last_update = CURRENT_DATE WHERE id = $1";

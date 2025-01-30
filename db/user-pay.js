@@ -26,7 +26,7 @@ const updateCredits = async (email, credits, subscriptionId, plan_id) => {
       // SQL query to update credits, subscription_id, and plan_id
       const query = `
         UPDATE jb_users 
-        SET credits = $1, subscription_id = $2, plan_id = $3
+        SET credits = $1, current_credits = $1, sub_id = $2, plan_id = $3
         WHERE email = $4
         RETURNING *`;
       
@@ -49,7 +49,7 @@ const updateCredits = async (email, credits, subscriptionId, plan_id) => {
 
 
 async function getUserCredits(email) {
-  const query = "SELECT credits FROM jb_users WHERE email = $1";
+  const query = "SELECT credits, current_credits FROM jb_users WHERE email = $1";
   const result = await executeQuery(query, [email]);
   return result.length > 0 ? result[0].credits : null;
 }
@@ -60,7 +60,7 @@ async function updateJobStatus(jobId, isOk) {
 }
 
 async function deductUserCredits(email) {
-  const query = "UPDATE jb_users SET credits = credits - 1 WHERE email = $1";
+  const query = "UPDATE jb_users SET current_credits = current_credits - 1 WHERE email = $1";
   await executeQuery(query, [email]);
 }
 
