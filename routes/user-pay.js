@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { updateCredits, getUserCredits, updateJobStatus, deductUserCredits, addUserCredits } = require("../db/user-pay"); // Assuming queries file for database operations
 
-router.post("/toggle", async (req, res) => {
+router.put("/toggle", async (req, res) => {
     const { job_id, is_ok, email } = req.body;
   
     if (!job_id || typeof is_ok === "undefined" || !email) {
