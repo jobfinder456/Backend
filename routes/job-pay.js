@@ -234,14 +234,11 @@ router.post("/cancel-subscription", authMiddleware, async (req, res) => {
 
 // GET /get-subscription
 router.get("/get-subscription", authMiddleware, async (req, res) => {
-  const email = req.email;
+    const email = req.email;
 
-  if (!email) {
-    return res.status(400).json({
-      success: false,
-      message: "Email is required.",
-    });
-  }
+    if (!email) {
+        return res.status(400).json({ success: false, message: "Email is required." });
+    }
 
   try {
     const query = `SELECT sub_id FROM jb_users WHERE email = $1`;
