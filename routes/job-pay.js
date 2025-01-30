@@ -278,7 +278,6 @@ router.post("/upgrade-subscription", authMiddleware, async (req, res) => {
 
 router.get("/get-subscription", authMiddleware, async (req, res) => {
     const email = req.email;
- 
     if (!email) {
         return res.status(400).json({ success: false, message: "Email is required." });
     }
@@ -288,13 +287,11 @@ router.get("/get-subscription", authMiddleware, async (req, res) => {
     const values = [email];
 
         const result = await executeQuery(query, values); // Execute the query
-
         if (!result ) {
             return res.status(404).json({ success: false, message: "Subscription not found for this email." });
         }
 
-        const subscriptionId = result[0].subscription_id;
-
+        const subscriptionId = result[0].sub_id;
         // Fetch subscription details from Razorpay API
         const razorpayResponse = await axios.get(
             `https://api.razorpay.com/v1/subscriptions/${subscriptionId}`,
@@ -305,7 +302,11 @@ router.get("/get-subscription", authMiddleware, async (req, res) => {
                 },
             }
         );
-
+        console.log(razorpayResponse)
+        
+        if (!razorpayResponse ) {
+          return res.status(400).json({ success: false, message:"no subscription found" });
+      }
         const { plan_id, customer_id, current_start, current_end, charge_at, end_at } = razorpayResponse.data;
 
         let plan_name = "Unknown"; 
