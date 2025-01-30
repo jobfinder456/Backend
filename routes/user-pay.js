@@ -1,10 +1,11 @@
 const express = require("express");
 const router = express.Router();
 const { updateCredits, getUserCredits, updateJobStatus, deductUserCredits, addUserCredits } = require("../db/user-pay"); // Assuming queries file for database operations
+const { authMiddleware } = require("../auth/middleware");
 
-router.put("/toggle", async (req, res) => {
-    const { job_id, is_ok, email } = req.body;
-  
+router.put("/toggle",authMiddleware, async (req, res) => {
+    const { job_id, is_ok } = req.body;
+    const email = req.email
     if (!job_id || typeof is_ok === "undefined" || !email) {
       return res.status(400).json({ success: false, message: "Missing required fields." });
     }
