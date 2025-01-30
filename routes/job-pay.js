@@ -301,7 +301,7 @@ router.post("/upgrade-subscription", authMiddleware, async (req, res) => {
 
 router.get("/get-subscription", authMiddleware, async (req, res) => {
     const email = req.email;
-
+ 
     if (!email) {
         return res.status(400).json({ success: false, message: "Email is required." });
     }
