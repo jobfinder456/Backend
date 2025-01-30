@@ -1,9 +1,8 @@
-const { Pool } = require("pg");
+const { Pool } = require("pg"); 
 const cron = require("node-cron");
 const path = require("path");
 
 require("dotenv").config({ path: path.join(__dirname, "../.env") });
-
 const pool = new Pool({
   user: process.env.DB_USER,
   host: process.env.DB_HOST,
@@ -12,21 +11,16 @@ const pool = new Pool({
   port: process.env.DB_PORT,
 });
 
-// Helper function for executing queries
 async function executeQuery(query, values = []) {
   const client = await pool.connect();
   try {
     const result = await client.query(query, values);
     return result.rows;
-  } catch (error) {
-    console.error("Database query error:", error);
-    throw new Error("Database operation failed");
   } finally {
     client.release();
   }
 }
 /*
-// Update job status for expired jobs
 async function updateJobStatus() {
   const query = `
     UPDATE jb_jobs 
@@ -41,40 +35,28 @@ async function updateJobStatus() {
     return result;
   } catch (error) {
     console.error("Error updating job statuses:", error);
-    throw error;
+    return null;
   }
 }
 
-// Schedule cron job to update job statuses daily at midnight
 cron.schedule("0 0 * * *", async () => {
-  try {
-    await updateJobStatus();
-    console.log("Job statuses updated successfully.");
-  } catch (error) {
-    console.error("Error in cron job:", error);
-  }
+  await updateJobStatus();
 });
 */
 
-// Update multiple jobs by their IDs
 async function jobUpdate(jobIds) {
-  const queryText = `
-    UPDATE jb_jobs 
-    SET is_ok = TRUE, last_update = CURRENT_DATE 
-    WHERE id = $1
-  `;
-
+  const queryText =
+    "UPDATE jb_jobs SET is_ok = TRUE, last_update = CURRENT_DATE WHERE id = $1";
   try {
     for (const jobId of jobIds) {
-      await executeQuery(queryText, [jobId]);
+      const queryParams = [jobId];
+      await executeQuery(queryText, queryParams);
     }
   } catch (error) {
     console.error("Error updating job status:", error);
-    throw error;
   }
 }
 
-// Get user job data with pagination
 async function getuserjobData(email, page) {
   try {
     const jobsPerPage = 20; 
@@ -111,251 +93,289 @@ async function getuserjobData(email, page) {
   }
 }
 
-// Get job data with filters and pagination
-async function getData(offset, limit, searchParams) {
-  const { searchTerm, location, remote, categories, level, compensation, commitment } = searchParams;
 
-  let query = `
-    SELECT 
-      jb_jobs.*, 
-      company_profile.company_name, 
-      company_profile.website, 
-      company_profile.image_url
-    FROM jb_jobs
-    JOIN company_profile ON jb_jobs.company_profile_id = company_profile.id
-  `;
-
-  let conditions = [];
-  let params = [];
-
-  if (searchTerm) {
-    conditions.push(`jb_jobs.job_title ILIKE $${params.length + 1}`);
-    params.push(`%${searchTerm}%`);
-  }
-
-  if (location) {
-    conditions.push(`jb_jobs.work_loc ILIKE $${params.length + 1}`);
-    params.push(`%${location}%`);
-  }
-
-  if (remote !== undefined) {
-    conditions.push(`jb_jobs.remote = $${params.length + 1}`);
-    params.push(remote);
-  }
-
-  if (categories) {
-    conditions.push(`jb_jobs.categories ILIKE $${params.length + 1}`);
-    params.push(`%${categories}%`);
-  }
-
-  if (level) {
-    conditions.push(`jb_jobs.level ILIKE $${params.length + 1}`);
-    params.push(`%${level}%`);
-  }
-
-  if (compensation) {
-    conditions.push(`jb_jobs.compensation = $${params.length + 1}`);
-    params.push(compensation);
-  }
-
-  if (commitment) {
-    conditions.push(`jb_jobs.commitment ILIKE $${params.length + 1}`);
-    params.push(`%${commitment}%`);
-  }
-
-  if (conditions.length > 0) {
-    query += ` WHERE ${conditions.join(" AND ")}`;
-  }
-
-  query += ` ORDER BY jb_jobs.last_update DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
-  params.push(limit, offset);
-
+async function getData(offset, limit, searchTerm, location, remote, categories, level, compensation, commitment) {
   try {
+    let query = `
+      SELECT 
+        JB_JOBS.*, 
+        company_profile.company_name, 
+        company_profile.website, 
+        company_profile.image_url
+      FROM JB_JOBS
+      JOIN company_profile 
+        ON JB_JOBS.company_profile_id = company_profile.id
+    `;
+
+    let conditions = []; 
+    let params = [];
+
+    if (searchTerm) {
+      conditions.push(`JB_JOBS.job_title ILIKE $${params.length + 1}`);
+      params.push(`%${searchTerm}%`); 
+    }
+
+    if (remote === true) {
+      if (location) {
+        conditions.push(`JB_JOBS.remote = true AND JB_JOBS.work_loc ILIKE $${params.length + 1}`);
+        params.push(`%${location}%`);
+      } else {
+        conditions.push(`JB_JOBS.remote = $${params.length + 1}`);
+        params.push(remote);
+      }
+    } else if (location) {
+      conditions.push(`JB_JOBS.work_loc ILIKE $${params.length + 1}`);
+      params.push(`%${location}%`);
+    }
+
+    if (categories) {
+      conditions.push(`JB_JOBS.categories ILIKE $${params.length + 1}`);
+      params.push(`%${categories}%`);
+    }
+
+    if (level) {
+      conditions.push(`JB_JOBS.level ILIKE $${params.length + 1}`);
+      params.push(`%${level}%`);
+    }
+
+    if (compensation) {
+      conditions.push(`JB_JOBS.compensation = $${params.length + 1}`);
+      params.push(compensation);
+    }
+
+    if (commitment) {
+      conditions.push(`JB_JOBS.commitment ILIKE $${params.length + 1}`);
+      params.push(`%${commitment}%`);
+    }
+
+    if (conditions.length > 0) {
+      query += ` WHERE ` + conditions.join(" AND ");
+    }
+
+    query += ` ORDER BY JB_JOBS.last_update DESC`;
+
+    query += ` OFFSET $${params.length + 1} LIMIT $${params.length + 2}`;
+    params.push(offset, limit);
+
     const result = await executeQuery(query, params);
     return result;
   } catch (error) {
-    console.error("Error fetching job data:", error);
-    throw error;
+    console.error("Error executing query:", error);
+    return [];
   }
 }
 
-// Get job details by ID
 async function getJobById(jobId) {
-  const query = `
-    SELECT 
-      jb_jobs.*,
-      company_profile.company_name, 
-      company_profile.website, 
-      company_profile.image_url
-    FROM jb_jobs
-    JOIN company_profile ON jb_jobs.company_profile_id = company_profile.id
-    WHERE jb_jobs.id = $1
-  `;
-
   try {
+    const query = `
+      SELECT 
+        JB_JOBS.*,
+        company_profile.company_name, 
+        company_profile.website, 
+        company_profile.image_url
+      FROM jb_jobs 
+      JOIN company_profile ON jb_jobs.company_profile_id = company_profile.id 
+      WHERE jb_jobs.id = $1
+    `;
     const job = await executeQuery(query, [jobId]);
-    return job[0] || null;
+    return job[0]; 
   } catch (error) {
     console.error("Error fetching job by ID:", error);
-    throw error;
+    return null;
   }
 }
 
-// Insert a new job
-async function insertData(jobData) {
-  const {
-    company_profile_id,
-    job_title,
-    work_loc,
-    commitment,
-    remote,
-    job_link,
-    description,
-    categories,
-    level,
-    compensation,
-    name,
-    email,
-  } = jobData;
+async function insertData(
+  company_profile_id,
+  job_title,
+  work_loc,
+  commitment,
+  remote,
+  job_link,
+  description,
+  categories,
+  level,
+  compensation,
+  name,
+  email
+) {
+  try {
+    const insertJobQuery = `
+      INSERT INTO jb_jobs (
+        company_profile_id, 
+        job_title, 
+        work_loc, 
+        commitment, 
+        remote, 
+        job_link, 
+        description,
+        categories,
+        level,
+        compensation,
+        name,
+        email
+      ) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      RETURNING *
+    `;
 
-  const insertJobQuery = `
-    INSERT INTO jb_jobs (
-      company_profile_id, 
-      job_title, 
-      work_loc, 
-      commitment, 
-      remote, 
-      job_link, 
+    const insertJobValues = [
+      company_profile_id,
+      job_title,
+      work_loc,
+      commitment,
+      remote,
+      job_link,
       description,
       categories,
       level,
       compensation,
       name,
       email
-    ) 
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-    RETURNING *
-  `;
+    ];
 
-  const insertJobValues = [
-    company_profile_id,
-    job_title,
-    work_loc,
-    commitment,
-    remote,
-    job_link,
-    description,
-    categories,
-    level,
-    compensation,
-    name,
-    email,
-  ];
-
-  try {
     const insertedJob = await executeQuery(insertJobQuery, insertJobValues);
-    return insertedJob[0] || null;
+
+    if (insertedJob.length === 0) {
+      return null;
+    }
+
+    const jobDetailsQuery = `
+      SELECT 
+        jb_jobs.*,
+        company_profile.company_name, 
+        company_profile.website, 
+        company_profile.image_url
+      FROM jb_jobs
+      JOIN company_profile ON jb_jobs.company_profile_id = company_profile.id
+      WHERE jb_jobs.id = $1
+    `;
+
+    const jobDetails = await executeQuery(jobDetailsQuery, [insertedJob[0].id]);
+    return jobDetails[0];  
   } catch (error) {
     console.error("Error inserting job data:", error);
-    throw error;
+    return null;
   }
 }
 
-// Update job impressions
 async function impressiondb(jobId) {
-  const query = `
-    UPDATE jb_jobs 
-    SET impressions = impressions + 1 
-    WHERE id = $1
-  `;
-
-  try {
-    await executeQuery(query, [jobId]);
-  } catch (error) {
-    console.error("Error updating job impressions:", error);
-    throw error;
-  }
+  const query = 'UPDATE jb_jobs SET impressions = impressions + 1 WHERE id = $1 ';
+  const addimp = await executeQuery(query, [jobId])
+  return addimp
 }
 
-// Update job details
 async function updateJob(jobId, jobData) {
-  const {
-    job_title,
-    work_loc,
-    commitment,
-    remote,
-    job_link,
-    description,
-    categories,
-    level,
-    compensation,
-    company_profile_id,
-    name,
-    email,
-  } = jobData;
-
-  const query = `
-    UPDATE jb_jobs
-    SET 
-      job_title = $1,
-      work_loc = $2,
-      commitment = $3,
-      remote = $4,
-      job_link = $5,
-      description = $6,
-      categories = $7,
-      level = $8,
-      compensation = $9,
-      name = $10,
-      email = $11,
-      company_profile_id = $12
-    WHERE id = $13
-    RETURNING *
-  `;
-
-  const values = [
-    job_title,
-    work_loc,
-    commitment,
-    remote,
-    job_link,
-    description,
-    categories,
-    level,
-    compensation,
-    name,
-    email,
-    company_profile_id,
-    jobId,
-  ];
-
+  const { job_title, work_loc, commitment, remote, job_link, description, categories, level, compensation, company_profile_id, name, email } = jobData;
   try {
-    const updatedJob = await executeQuery(query, values);
-    return updatedJob[0] || null;
+    const query = `
+      UPDATE jb_jobs
+      SET 
+        job_title = $1,
+        work_loc = $2,
+        commitment = $3,
+        remote = $4,
+        job_link = $5,
+        description = $6,
+        categories = $7,
+        level = $8,
+        compensation = $9,
+        name = $10,
+        email = $11,
+        company_profile_id = $12
+      WHERE id = $13
+      RETURNING *
+    `;
+    
+    const updatedJob = await executeQuery(query, [
+      job_title,
+      work_loc,
+      commitment,
+      remote,
+      job_link,
+      description,
+      categories,
+      level,
+      compensation,
+      name,
+      email,
+      company_profile_id,
+      jobId
+    ]);
+    
+    if (updatedJob.length > 0) {
+      const profileQuery = `
+        SELECT 
+          company_profile.company_name, 
+          company_profile.website, 
+          company_profile.image_url
+        FROM jb_jobs
+        JOIN company_profile ON jb_jobs.company_profile_id = company_profile.id
+        WHERE jb_jobs.id = $1
+      `;
+      
+      const profileDetails = await executeQuery(profileQuery, [jobId]);
+      
+      return {
+        ...updatedJob[0],
+        ...profileDetails[0] 
+      };
+    }
+    
+    return null;
   } catch (error) {
     console.error("Error updating job:", error);
-    throw error;
+    return null;
   }
 }
 
-// Delete a job
 async function deleteJob(jobId) {
+  try {
+    const query = `
+      DELETE FROM jb_jobs 
+      WHERE id = $1 
+      RETURNING *;
+    `;
+    const deletedJob = await executeQuery(query, [jobId]);
+    
+    if (deletedJob.length === 0) {
+      return null;
+    }
+    
+    return deletedJob[0]; 
+  } catch (error) {
+    console.error("Error deleting job:", error);
+    return null;
+  }
+}
+
+async function getJobImpressions(jobId) {
   const query = `
-    DELETE FROM jb_jobs 
-    WHERE id = $1 
-    RETURNING *
+    SELECT 
+        impressions
+    FROM 
+        jb_jobs
+    WHERE 
+        id = $1
   `;
 
   try {
-    const deletedJob = await executeQuery(query, [jobId]);
-    return deletedJob[0] || null;
+    const result = await executeQuery(query, [jobId]);
+
+    const rows = Array.isArray(result) ? result : result?.rows;
+
+    if (rows && rows.length > 0) {
+      const impressions = rows[0].impressions; 
+      return impressions;
+    } else {
+      return 0;
+    }
   } catch (error) {
-    console.error("Error deleting job:", error);
-    throw error;
+    console.error("Error in getJobImpressions:", error);
+    throw new Error("Database query failed");
   }
 }
 
-// Get total impressions for a user
 async function getTotalImpressions(email) {
   try {
     // Query to get user ID and credits
@@ -431,6 +451,43 @@ async function getTotalImpressions(email) {
 }
 
 
+async function insertResume(name, email, fileLink, position) {
+  try {
+    // Check if the email already exists
+    const checkQuery = `SELECT email FROM user_details WHERE email = $1;`;
+    const checkResult = await executeQuery(checkQuery, [email]);
+
+    if (checkResult.rows > 0) {
+      // Email already exists
+      return {
+        success: false,
+        error: "Email already exists.",
+      };
+    }
+
+    // Email does not exist, proceed to insert
+    const insertQuery = `
+      INSERT INTO user_details (name, email, s3_resume_url, position)
+      VALUES ($1, $2, $3, $4)
+      RETURNING *;
+    `;
+    const values = [name, email, fileLink, position];
+    const insertResult = await executeQuery(insertQuery, values);
+
+    return {
+      success: true,
+      data: insertResult[0],
+    };
+  } catch (error) {
+    console.error("Error inserting resume into database:", error);
+
+    return {
+      success: false,
+      error: "Failed to insert data into the database.",
+    };
+  }
+}
+
 async function insertProfile(email,company_name, website, fileLink) {
   try {
       const findUserQuery = 'SELECT id FROM jb_users WHERE email = $1';
@@ -452,62 +509,6 @@ async function insertProfile(email,company_name, website, fileLink) {
   }
 }
 
-async function getJobImpressions(jobId) {
-  const query = `
-    SELECT 
-        impressions
-    FROM 
-        jb_jobs
-    WHERE 
-        id = $1
-  `;
-
-  try {
-    const result = await executeQuery(query, [jobId]);
-
-    const rows = Array.isArray(result) ? result : result?.rows;
-
-    if (rows && rows.length > 0) {
-      const impressions = rows[0].impressions; 
-      return impressions;
-    } else {
-      return 0;
-    }
-  } catch (error) {
-    console.error("Error in getJobImpressions:", error);
-    throw new Error("Database query failed");
-  }
-}
-
-// Insert a new resume
-async function insertResume(name, email, fileLink, position) {
-  const checkQuery = `
-    SELECT email 
-    FROM user_details 
-    WHERE email = $1
-  `;
-
-  const insertQuery = `
-    INSERT INTO user_details (name, email, s3_resume_url, position)
-    VALUES ($1, $2, $3, $4)
-    RETURNING *
-  `;
-
-  try {
-    const checkResult = await executeQuery(checkQuery, [email]);
-    if (checkResult.length > 0) {
-      return { success: false, error: "Email already exists." };
-    }
-
-    const insertResult = await executeQuery(insertQuery, [name, email, fileLink, position]);
-    return { success: true, data: insertResult[0] };
-  } catch (error) {
-    console.error("Error inserting resume:", error);
-    throw error;
-  }
-}
-
-// Get all companies
 async function getAllCompanies() {
   const query = `
     SELECT 
@@ -515,60 +516,142 @@ async function getAllCompanies() {
       cp.image_url, 
       COUNT(jj.id) AS total_jobs
     FROM company_profile cp
-    LEFT JOIN jb_jobs jj ON cp.id = jj.company_profile_id
-    GROUP BY cp.id, cp.company_name, cp.image_url
+    LEFT JOIN jb_jobs jj
+      ON cp.id = jj.company_profile_id
+    GROUP BY cp.id, cp.company_name, cp.image_url;
   `;
 
   try {
     const result = await executeQuery(query);
-    return result;
+    return result; 
   } catch (error) {
     console.error("Error fetching all companies:", error);
-    throw error;
+    throw error; 
   }
 }
 
-// Get company details
 async function getCompanyDetails(company) {
-  const query = `
-    SELECT 
-      cp.*, 
-      COUNT(jj.id) AS total_jobs
-    FROM company_profile cp
-    LEFT JOIN jb_jobs jj ON cp.id = jj.company_profile_id
-    WHERE LOWER(REPLACE(cp.company_name, ' ', '')) ILIKE LOWER(REPLACE($1, ' ', ''))
-    GROUP BY cp.id
+  const getCompanyDetailsQuery = `
+  SELECT * 
+  FROM company_profile 
+  WHERE LOWER(REPLACE(company_name, ' ', '')) ILIKE LOWER(REPLACE($1, ' ', ''));
+`;
+  
+  const getJobCountQuery = `
+    SELECT COUNT(*) AS total_jobs
+    FROM jb_jobs 
+    WHERE company_profile_id = $1
   `;
 
   try {
-    const result = await executeQuery(query, [company]);
-    return result[0] || null;
+    const companyDetailsResult = await executeQuery(getCompanyDetailsQuery, [company]);
+    if (companyDetailsResult.length === 0) {
+      return null; 
+    }
+    const companyDetails = companyDetailsResult[0];
+    const companyId = companyDetails.id;
+    const companyName = companyDetails.company_name
+    const imageUrl = companyDetails.image_url
+
+    const jobCountResult = await executeQuery(getJobCountQuery, [companyId]);
+    const totalJobs = parseInt(jobCountResult[0]?.total_jobs || "0", 10);
+
+    return {
+      company: companyName,
+      imageUrl: imageUrl,
+      totalJobs: totalJobs,
+    };
   } catch (error) {
     console.error("Error fetching company details:", error);
     throw error;
   }
 }
 
-// Get company job details
 async function getCompanyJobDetails(company, searchParams, page) {
   const jobsPerPage = 20;
   const offset = (page - 1) * jobsPerPage;
 
-  const query = `
-    SELECT 
-      jb_jobs.*,
-      company_profile.image_url
-    FROM jb_jobs
-    JOIN company_profile ON jb_jobs.company_profile_id = company_profile.id
-    WHERE LOWER(REPLACE(company_profile.company_name, ' ', '')) ILIKE LOWER(REPLACE($1, ' ', ''))
-    LIMIT $2 OFFSET $3
+  const getCompanyDetailsQuery = `
+    SELECT * 
+    FROM company_profile 
+    WHERE LOWER(REPLACE(company_name, ' ', '')) ILIKE LOWER(REPLACE($1, ' ', ''));
   `;
 
+  let getJobsQuery = `
+    SELECT 
+      jb_jobs.id,
+      jb_jobs.company_profile_id,
+      jb_jobs.job_title,
+      jb_jobs.work_loc,
+      jb_jobs.commitment,
+      jb_jobs.remote,
+      jb_jobs.job_link,
+      jb_jobs.is_ok,
+      jb_jobs.categories,
+      jb_jobs.level,
+      jb_jobs.compensation,
+      company_profile.image_url
+    FROM jb_jobs
+    JOIN company_profile
+      ON jb_jobs.company_profile_id = company_profile.id
+    WHERE jb_jobs.company_profile_id = $1
+  `;
+
+  const queryParams = [];
+  let paramIndex = 2; 
+
+  if (searchParams.job_title) {
+    getJobsQuery += ` AND jb_jobs.job_title ILIKE $${paramIndex}`;
+    queryParams.push(`%${searchParams.job_title}%`);
+    paramIndex++;
+  }
+  if (searchParams.location) {
+    getJobsQuery += ` AND jb_jobs.work_loc ILIKE $${paramIndex}`;
+    queryParams.push(`%${searchParams.location}%`);
+    paramIndex++;
+  }
+  if (searchParams.remote) {
+    getJobsQuery += ` AND jb_jobs.remote = $${paramIndex}`;
+    queryParams.push(searchParams.remote);
+    paramIndex++;
+  }
+  if (searchParams.commitment) {
+    getJobsQuery += ` AND jb_jobs.commitment ILIKE $${paramIndex}`;
+    queryParams.push(`%${searchParams.commitment}%`);
+    paramIndex++;
+  }
+  if (searchParams.categories) {
+    getJobsQuery += ` AND jb_jobs.categories ILIKE $${paramIndex}`;
+    queryParams.push(`%${searchParams.categories}%`);
+    paramIndex++;
+  }
+  if (searchParams.level) {
+    getJobsQuery += ` AND jb_jobs.level ILIKE $${paramIndex}`;
+    queryParams.push(`%${searchParams.level}%`);
+    paramIndex++;
+  }
+  if (searchParams.compensation) {
+    getJobsQuery += ` AND jb_jobs.compensation ILIKE $${paramIndex}`;
+    queryParams.push(`%${searchParams.compensation}%`);
+    paramIndex++;
+  }
+  getJobsQuery += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+  queryParams.push(jobsPerPage, offset);
+
   try {
-    const result = await executeQuery(query, [company, jobsPerPage, offset]);
-    return { jobs: result };
+    const companyDetailsResult = await executeQuery(getCompanyDetailsQuery, [company]);
+    if (companyDetailsResult.length === 0) {
+      return null; 
+    }
+    const companyDetails = companyDetailsResult[0];
+    const companyId = companyDetails.id;
+
+    const jobsResult = await executeQuery(getJobsQuery, [companyId, ...queryParams]);
+    return {
+      jobs: jobsResult
+    };
   } catch (error) {
-    console.error("Error fetching company job details:", error);
+    console.error("Error fetching company details:", error);
     throw error;
   }
 }
@@ -588,5 +671,5 @@ module.exports = {
   insertResume,
   getAllCompanies,
   getCompanyJobDetails,
-  getCompanyDetails,
+  getCompanyDetails
 };
