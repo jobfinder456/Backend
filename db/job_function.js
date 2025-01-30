@@ -379,6 +379,54 @@ async function getTotalImpressions(email) {
   }
 }
 
+async function insertProfile(email,company_name, website, fileLink) {
+  try {
+      const findUserQuery = 'SELECT id FROM jb_users WHERE email = $1';
+      const userResult = await executeQuery(findUserQuery, [email]);
+      if (userResult.length === 0) {
+          return { error: "User not found" };
+      }
+      const userId = userResult[0].id;
+      const insertProfileQuery = `
+          INSERT INTO company_profile (company_name, website, image_url, jb_user_id)
+          VALUES ($1, $2, $3, $4)
+          `;
+      const values = [company_name, website, fileLink, userId];
+      await executeQuery(insertProfileQuery, values);
+      return { success: true };
+  } catch (err) {
+      console.error("Error inserting profile", err);
+      return { error: err.message };
+  }
+}
+
+async function getJobImpressions(jobId) {
+  const query = `
+    SELECT 
+        impressions
+    FROM 
+        jb_jobs
+    WHERE 
+        id = $1
+  `;
+
+  try {
+    const result = await executeQuery(query, [jobId]);
+
+    const rows = Array.isArray(result) ? result : result?.rows;
+
+    if (rows && rows.length > 0) {
+      const impressions = rows[0].impressions; 
+      return impressions;
+    } else {
+      return 0;
+    }
+  } catch (error) {
+    console.error("Error in getJobImpressions:", error);
+    throw new Error("Database query failed");
+  }
+}
+
 // Insert a new resume
 async function insertResume(name, email, fileLink, position) {
   const checkQuery = `
