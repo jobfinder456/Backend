@@ -1,46 +1,71 @@
 const express = require("express");
 const router = express.Router();
-const { authMiddleware} = require("../auth/middleware")
-const { getUserCredits, updateJobStatus, deductUserCredits, addUserCredits } = require("../db/user-pay"); // Assuming queries file for database operations
+const { authMiddleware } = require("../auth/middleware");
+const {
+  getUserCredits,
+  updateJobStatus,
+  deductUserCredits,
+  addUserCredits,
+} = require("../db/user-pay");
 
+// PUT /toggle - Toggle job status and update user credits
 router.put("/toggle", authMiddleware, async (req, res) => {
-    const { job_id, is_ok } = req.body;
-  const email = req.email
+  const { job_id, is_ok } = req.body;
+  const email = req.email;
 
-  
-    if (!job_id || typeof is_ok === "undefined" || !email) {
-      return res.status(400).json({ success: false, message: "Missing required fields." });
+  // Input validation
+  if (!job_id || typeof is_ok === "undefined" || !email) {
+    return res.status(400).json({
+      success: false,
+      message: "Missing required fields: job_id, is_ok, or email.",
+    });
+  }
+
+  try {
+    // Get user credits
+    const userCredits = await getUserCredits(email);
+
+    if (userCredits === null) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
     }
-  
-    try {
-      // Get user credits
-      const userCredits = await getUserCredits(email);
-  /*
-      if (userCredits === null ) {
-        return res.status(404).json({ success: false, message: "User not found." });
+
+    if (is_ok) {
+      // If is_ok is true, check if the user has enough credits
+      if (userCredits <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Insufficient credits.",
+        });
       }
-  */
-      if (is_ok) {
-        // If is_ok is true and the user has enough credits
-        if (userCredits > 0 ) {
-          await updateJobStatus(job_id, is_ok); // Update job status
-          await deductUserCredits(email); // Deduct one credit
-          return res.status(200).json({ success: true, message: "Job updated and credits deducted successfully." });
-        } else {
-          return res.status(400).json({ success: false, message: "Insufficient credits." });
-        }
-      } else {
-        // If is_ok is false
-        await updateJobStatus(job_id, is_ok); // Update job status
-        await addUserCredits(email); // Add one credit
-        return res.status(200).json({ success: true, message: "Job updated and one credit added successfully." });
-      }
-    } catch (error) {
-      console.error("Error in /toggle route:", error);
-      return res.status(500).json({ success: false, message: "Internal server error." });
+
+      // Update job status and deduct credits
+      await updateJobStatus(job_id, is_ok);
+      await deductUserCredits(email);
+
+      return res.status(200).json({
+        success: true,
+        message: "Job updated and credits deducted successfully.",
+      });
+    } else {
+      // If is_ok is false, update job status and add credits
+      await updateJobStatus(job_id, is_ok);
+      await addUserCredits(email);
+
+      return res.status(200).json({
+        success: true,
+        message: "Job updated and one credit added successfully.",
+      });
     }
-  });
-
-
+  } catch (error) {
+    console.error("Error in /toggle route:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error.",
+    });
+  }
+});
 
 module.exports = router;

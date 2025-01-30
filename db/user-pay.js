@@ -21,6 +21,23 @@ async function executeQuery(query, values = []) {
   }
 }
 
+cron.schedule('0 0 * * *', async () => {
+  try {
+      // Query to find users with expired subscriptions
+      const query = `
+          UPDATE jb_users
+          SET credits = 0
+          WHERE sub_expiry <= NOW() AND credits > 0;
+      `;
+      
+      await client.query(query);
+
+      console.log("Credits removed for expired subscriptions.");
+  } catch (error) {
+      console.error("Error removing credits:", error);
+  }
+});
+
 const updateCredits = async (email, credits, subscriptionId, plan_id) => {
   try {
       // SQL query to update credits, subscription_id, and plan_id
