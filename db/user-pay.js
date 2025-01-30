@@ -26,11 +26,12 @@ cron.schedule('0 0 * * *', async () => {
       // Query to find users with expired subscriptions
       const query = `
           UPDATE jb_users
-          SET credits = 0
+          SET credits = 0, 
+          current_credits = 0
           WHERE sub_expiry <= NOW() AND credits > 0;
       `;
       
-      await client.query(query);
+      await executeQuery(query);
 
       console.log("Credits removed for expired subscriptions.");
   } catch (error) {

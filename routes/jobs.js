@@ -195,8 +195,8 @@ router.get("/jobs", authMiddleware, async (req, res) => {
   }
 });
 
-router.get("/user/impressions", async (req, res) => {
-
+router.get("/user/impressions", authMiddleware, async (req, res) => {
+  const email =req.email
   try {
     const totalImpressions = await getTotalImpressions(email);
 

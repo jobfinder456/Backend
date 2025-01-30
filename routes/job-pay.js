@@ -37,7 +37,7 @@ function getRazorpayAuth() {
 }
 
 // POST /create-subscription
-router.post("/create-subscription", async (req, res) => {
+router.post("/create-subscription", authMiddleware, async (req, res) => {
   const { plan_id, quantity } = req.body;
   const total_count = 12; // 12 months subscription
 
@@ -87,7 +87,7 @@ router.post("/verify-subscription", authMiddleware, async (req, res) => {
       message: "Subscription ID and Plan ID are required.",
     });
   }
-
+  console.log("1")
   try {
     // Step 1: Verify subscription status with Razorpay
     const url = `https://api.razorpay.com/v1/subscriptions/${subscriptionId}`;
@@ -99,7 +99,7 @@ router.post("/verify-subscription", authMiddleware, async (req, res) => {
     });
 
     const subscriptionStatus = response.data.status;
-
+    console.log("1", subscriptionStatus)
     // Step 2: Check subscription status
     if (subscriptionStatus === "active") {
       if(plan_id==="plan_Po2Z7yEL8Z7Qm1"){
@@ -121,11 +121,11 @@ router.post("/verify-subscription", authMiddleware, async (req, res) => {
         message: "User with the given email not found.",
       });
     }
-
+  }
     const subject = "Subscription Activated";
     const message = `Dear User,\n\nYour subscription (ID: ${subscriptionId}) has been successfully activated.`;
-    await otpSenderMail(email, subject, message);
-
+    otpSenderMail(email, subject, message);
+    console.log("1 all done")
     return res.status(200).json({
       success: true,
       message: "Subscription verified and activated successfully.",
@@ -133,7 +133,7 @@ router.post("/verify-subscription", authMiddleware, async (req, res) => {
       subscriptionStatus,
     });
   } 
-  }}catch (error) {
+  }catch (error) {
     console.error("Error verifying Razorpay subscription:", error.response?.data || error.message);
 
     const subject = "Subscription Verification Failure";
@@ -165,7 +165,7 @@ router.post("/cancel-subscription", authMiddleware, async (req, res) => {
       // Cancel the subscription
       const response = await axios.post(
         `https://api.razorpay.com/v1/subscriptions/${subscription_id}/cancel`,
-        {},
+        { "cancel_at_cycle_end":1 },
         {
             auth: {
                 username: process.env.RAZORPAY_TEST_KEY_ID,  // Ensure you're using the correct key
@@ -173,7 +173,21 @@ router.post("/cancel-subscription", authMiddleware, async (req, res) => {
             }
         }
     );
+    const expiryTimestamp = response.data.current_end;
+    if (!expiryTimestamp) {
+      return res.status(400).json({
+        success: false,
+        message: "Could not fetch subscription expiration date.",
+      });
+    }
+    console.log('Expiry Timestamp:', expiryTimestamp);
+console.log('Expiry Timestamp as number:', Number(expiryTimestamp));
 
+     const check =  await executeQuery(
+  `UPDATE jb_users SET sub_id = NULL, sub_expiry = TO_TIMESTAMP($1) WHERE email = $2 RETURNING *`,
+  [Number(expiryTimestamp), email]
+      );
+        console.log(check)
       // Extract the data from the response object
       const responseData = response.data;  // Get only the 'data' from the response
 
@@ -193,7 +207,7 @@ router.post("/cancel-subscription", authMiddleware, async (req, res) => {
 });
 
 
-router.post("/upgrade-subscription", authMiddleware, async (req, res) => {
+router.post("/upgrade-subscription", authMiddleware,async (req, res) => {
   const { subscription_id, new_plan_id, quantity, total_count } = req.body;
   const email = req.email
 
@@ -255,16 +269,26 @@ router.post("/upgrade-subscription", authMiddleware, async (req, res) => {
           }
       );
       const newSubscriptionId = newSubscription.data.id;
+      const subscriptionStatus = newSubscription.data.status;
+
+    // Step 2: Check subscription status
+    if (subscriptionStatus === "active") {
       await executeQuery(
-        `UPDATE jb_users SET subscription_id = $1 WHERE email = $2`,
+        `UPDATE jb_users SET sub_id = $1 WHERE email = $2`,
         [newSubscriptionId, email]
     );
-      return res.status(200).json({
-          success: true,
-          message: "Subscription upgraded successfully.",
+    return res.status(200).json({
+      success: true,
+      message: "Subscription upgraded successfully.",
+      subscription: newSubscription.data,
+  });
+  }else{
+      return res.status(402).json({
+          success: false,
+          message: "Subscription payment could not be verified",
           subscription: newSubscription.data,
       });
-
+    }
   } catch (error) {
       console.error("Error upgrading subscription:", error.response?.data || error.message);
       return res.status(500).json({
