@@ -287,7 +287,7 @@ router.get("/get-subscription", authMiddleware, async (req, res) => {
     const values = [email];
 
         const result = await executeQuery(query, values); // Execute the query
-        if (!result ) {
+        if (result.length == 0){
             return res.status(404).json({ success: false, message: "Subscription not found for this email." });
         }
 
