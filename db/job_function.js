@@ -25,7 +25,7 @@ async function executeQuery(query, values = []) {
     client.release();
   }
 }
-
+/*
 // Update job status for expired jobs
 async function updateJobStatus() {
   const query = `

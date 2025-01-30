@@ -132,7 +132,8 @@ router.post("/verify-subscription", authMiddleware, async (req, res) => {
       subscriptionId,
       subscriptionStatus,
     });
-  } catch (error) {
+  } 
+  }}catch (error) {
     console.error("Error verifying Razorpay subscription:", error.response?.data || error.message);
 
     const subject = "Subscription Verification Failure";
@@ -146,6 +147,7 @@ router.post("/verify-subscription", authMiddleware, async (req, res) => {
     });
   }
 });
+
 
 // POST /cancel-subscription
 router.post("/cancel-subscription", authMiddleware, async (req, res) => {
