@@ -10,8 +10,7 @@ const {
   getTotalImpressions,
   getAllCompanies,
   getCompanyJobDetails,
-  getCompanyDetails
-
+  getCompanyDetails,
 } = require("../db/job_function");
 const { authMiddleware } = require("../auth/middleware");
 const router = express.Router();
@@ -20,6 +19,7 @@ require("dotenv").config({ path: path.join(__dirname, "../.env") });
 
 router.use(express.json());
 
+// Validate required job fields
 const validateJobFields = (body) => {
   const {
     job_title,
@@ -44,54 +44,66 @@ const validateJobFields = (body) => {
   );
 };
 
+// Centralized error handler
+function handleError(res, error, customMessage) {
+  console.error(customMessage, error);
+  res.status(500).json({ error: customMessage || "Internal server error" });
+}
+
+// GET /list - List jobs with pagination and filters
 router.get("/list", async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
-    const searchTerm = req.query.search || "";
-    const location = req.query.loc || "";
-    const remote = req.query.remote ? req.query.remote === "true" : undefined;
-    const categories = req.query.categories || "";
-    const level = req.query.level || "";
-    const compensation = req.query.compensation || "";
-    const commitment = req.query.commitment || "";
     const offset = (page - 1) * limit;
 
-    const all = await getData(
-      offset,
-      limit,
-      searchTerm,
-      location,
-      remote,
-      categories,
-      level,
-      compensation,
-      commitment
-    );
-    res.status(200).json({ all });
+    const searchParams = {
+      searchTerm: req.query.search || "",
+      location: req.query.loc || "",
+      remote: req.query.remote ? req.query.remote === "true" : undefined,
+      categories: req.query.categories || "",
+      level: req.query.level || "",
+      compensation: req.query.compensation || "",
+      commitment: req.query.commitment || "",
+    };
+
+    const jobs = await getData(offset, limit, searchParams);
+    res.status(200).json({ jobs });
   } catch (error) {
     handleError(res, error, "Failed to retrieve jobs");
   }
 });
 
+// GET /jobs/:id - Get job by ID
 router.get("/jobs/:id", async (req, res) => {
   const jobId = req.params.id;
 
   try {
     const job = await getJobById(jobId);
-    const impression = await impressiondb(jobId)
-    if (!job || !impression) {
-      return res.status(404).json({ error: "Job not found or impression not registered" });
+    if (!job) {
+      return res.status(404).json({ error: "Job not found" });
     }
+
+    const impression = await impressiondb(jobId);
+    if (!impression) {
+      return res.status(500).json({ error: "Failed to register impression" });
+    }
+
     res.status(200).json(job);
   } catch (error) {
     handleError(res, error, `Failed to retrieve job with ID: ${jobId}`);
   }
 });
 
+// POST /insert - Insert a new job
 router.post("/insert", authMiddleware, async (req, res) => {
   try {
+    if (!validateJobFields(req.body)) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
     const {
+      company_profile_id,
       job_title,
       work_loc,
       commitment,
@@ -103,12 +115,7 @@ router.post("/insert", authMiddleware, async (req, res) => {
       compensation,
       name,
       email,
-      company_profile_id,
     } = req.body;
-
-    if (!validateJobFields(req.body)) {
-      return res.status(400).json({ error: "Missing required fields" });
-    }
 
     const insertedJob = await insertData(
       company_profile_id,
@@ -126,18 +133,16 @@ router.post("/insert", authMiddleware, async (req, res) => {
     );
 
     if (!insertedJob) {
-      return res.status(500).json({ error: "Failed to insert job. Please try again." });
+      return res.status(500).json({ error: "Failed to insert job" });
     }
-    
-    res.status(201).json({
-      message: "Job inserted successfully",
-      job: insertedJob,
-    });
+
+    res.status(201).json({ message: "Job inserted successfully", job: insertedJob });
   } catch (error) {
     handleError(res, error, "Error inserting job");
   }
 });
 
+// PUT /jobs/:id - Update a job
 router.put("/jobs/:id", authMiddleware, async (req, res) => {
   const jobId = req.params.id;
 
@@ -157,82 +162,97 @@ router.put("/jobs/:id", authMiddleware, async (req, res) => {
   }
 });
 
+// DELETE /jobs/:id - Delete a job
 router.delete("/jobs/:id", authMiddleware, async (req, res) => {
   const jobId = req.params.id;
+
   try {
     const deleted = await deleteJob(jobId);
     if (!deleted) {
       return res.status(404).json({ error: "Job not found" });
     }
+
     res.status(200).json({ message: "Job deleted successfully" });
   } catch (error) {
     handleError(res, error, `Failed to delete job with ID: ${jobId}`);
   }
 });
 
+// GET /jobs - Get jobs for the authenticated user
 router.get("/jobs", authMiddleware, async (req, res) => {
   try {
     const email = req.email;
-
-    // Extract the page number from the query parameters, default to 1 if not provided
     const page = parseInt(req.query.page) || 1;
 
     if (page < 1) {
-      return res.status(400).json({ error: "Page number must be 1 or greater." });
+      return res.status(400).json({ error: "Page number must be 1 or greater" });
     }
 
-    // Fetch jobs with pagination
-    const { jobResult, hasMore ,credits} = await getuserjobData(email, page);
+    const { jobResult, hasMore, credits } = await getuserjobData(email, page);
 
     res.status(200).json({
-      all: {jobResult : jobResult},
+      jobs: jobResult,
       hasMore,
       currentPage: page,
+      credits,
     });
   } catch (error) {
-    console.error(`Failed to retrieve jobs for user with email: ${req.email}`, error);
-    handleError(res, error, "Failed to retrieve jobs.");
+    handleError(res, error, "Failed to retrieve jobs");
   }
 });
 
+// GET /user/impressions - Get total impressions for the authenticated user
 router.get("/user/impressions", authMiddleware, async (req, res) => {
-  const email = req.email 
   try {
-    const totalImpressions = await getTotalImpressions(email);
+    const email = req.email;
+    const impressionsData = await getTotalImpressions(email);
 
-    res.status(200).json({ success: true, total_impressions: totalImpressions.totalImpressions,total_jobs:totalImpressions.totalJobs,jobs_ok_true:totalImpressions.jobsOkTrue,jobs_ok_false:totalImpressions.jobsOkFalse, credits:totalImpressions.credits });
+    res.status(200).json({
+      success: true,
+      total_impressions: impressionsData.totalImpressions,
+      total_jobs: impressionsData.totalJobs,
+      jobs_ok_true: impressionsData.jobsOkTrue,
+      jobs_ok_false: impressionsData.jobsOkFalse,
+      credits: impressionsData.credits,
+    });
   } catch (error) {
-    console.error("Error fetching impressions:", error);
-    res.status(500).json({ success: false, message: "Could not fetch impressions" });
+    handleError(res, error, "Failed to fetch impressions");
   }
 });
 
+// GET /companies - Get all companies
 router.get("/companies", async (req, res) => {
   try {
     const companies = await getAllCompanies();
-    console.log(companies)
     res.status(200).json({ success: true, data: companies });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: "Server error" });
+    handleError(res, error, "Failed to fetch companies");
   }
 });
+
+// GET /companies/:company - Get details of a specific company
 router.get("/companies/:company", async (req, res) => {
   const { company } = req.params;
-  const companyData = await getCompanyDetails(company);
-  if (!companyData) {
-    return res.status(404).json({ success: false, message: "Company not found" });
+
+  try {
+    const companyData = await getCompanyDetails(company);
+    if (!companyData) {
+      return res.status(404).json({ success: false, message: "Company not found" });
+    }
+
+    res.status(200).json({ success: true, data: companyData });
+  } catch (error) {
+    handleError(res, error, "Failed to fetch company details");
   }
+});
 
-  res.status(200).json({ success: true, data: companyData });
-})
-
+// GET /companies/info/:company - Get job details for a specific company
 router.get("/companies/info/:company", async (req, res) => {
   const { company } = req.params;
   const page = parseInt(req.query.page) || 1;
 
   if (page < 1) {
-    return res.status(400).json({ error: "Page number must be 1 or greater." });
+    return res.status(400).json({ error: "Page number must be 1 or greater" });
   }
 
   const searchParams = {
@@ -247,22 +267,14 @@ router.get("/companies/info/:company", async (req, res) => {
 
   try {
     const companyData = await getCompanyJobDetails(company, searchParams, page);
-
     if (!companyData) {
       return res.status(404).json({ success: false, message: "Company not found" });
     }
 
     res.status(200).json({ success: true, data: companyData });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: "Server error" });
+    handleError(res, error, "Failed to fetch company job details");
   }
 });
-
-function handleError(res, error, customMessage) {
-  console.error(customMessage, error);
-
-  res.status(500).json({ error: customMessage || "Internal server error" });
-}
 
 module.exports = router;
