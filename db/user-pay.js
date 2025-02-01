@@ -44,11 +44,11 @@ const updateCredits = async (email, credits, subscriptionId, plan_id) => {
       // SQL query to update credits, subscription_id, and plan_id
       const query = `
         UPDATE jb_users 
-        SET credits = $1, current_credits = $1, sub_id = $2, plan_id = $3
+        SET credits = $1, current_credits = $1, sub_id = $2, plan_id = $3, status = $5
         WHERE email = $4
         RETURNING *`;
       
-      const values = [credits, subscriptionId, plan_id, email];
+      const values = [credits, subscriptionId, plan_id, email, "active"];
 
       const result = await executeQuery(query, values); // Execute the query
 
@@ -65,6 +65,19 @@ const updateCredits = async (email, credits, subscriptionId, plan_id) => {
   }
 };
 
+async function getUserByEmail(email) {
+  try {
+      const query = 'SELECT * FROM jb_users WHERE email = $1';
+      const rows  = await executeQuery(query, [email]);
+      console.log(rows)
+      return rows[0];
+  } catch (error) {
+      console.error("Error fetching user:", error);
+      throw error;
+  }
+}
+
+getUserByEmail("nikhilchopra1705@gmail.com")
 
 async function getUserCredits(email) {
   const query = "SELECT credits, current_credits FROM jb_users WHERE email = $1";

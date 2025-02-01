@@ -135,4 +135,80 @@ router.post("/s3logo", authMiddleware, async (req, res) => {
   }
 });
 
+router.get("/get-user", authMiddleware ,async (req, res) => {
+    const email = req.email;
+
+    if (!email) {
+        return res.status(400).json({ success: false, message: "Email not provided" });
+    }
+
+    try {
+        const query = "SELECT name, sub_id, email FROM jb_users WHERE email = $1";
+        const result = await executeQuery(query, [email]);
+
+        if (!result) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        return res.status(200).json({ success: true, user: result[0] });
+
+    } catch (error) {
+        console.error("Error fetching user:", error);
+        return res.status(500).json({ success: false, message: "Internal Server Error" });
+    }
+});
+
+router.put("/profile", authMiddleware, async (req, res) => {
+  const { company_name, website, fileLink, company_id } = req.body;
+
+  if (!company_name && !website && !fileLink) {
+    return res.status(400).json({ error: "At least one field is required to update" });
+  }
+
+  try {
+
+    const profileId = company_id
+
+    // Build dynamic update query
+    let updateFields = [];
+    let values = [];
+    let index = 1;
+
+    if (company_name) {
+      updateFields.push(`company_name = $${index++}`);
+      values.push(company_name);
+    }
+    if (website) {
+      updateFields.push(`website = $${index++}`);
+      values.push(website);
+    }
+    if (fileLink) {
+      updateFields.push(`image_url = $${index++}`);
+      values.push(fileLink);
+    }
+
+    values.push(profileId);
+
+    const updateQuery = `
+      UPDATE company_profile
+      SET ${updateFields.join(", ")}
+      WHERE id = $${index}
+      RETURNING company_name, website, image_url
+    `;
+
+    const updatedProfile = await executeQuery(updateQuery, values);
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      profile: updatedProfile[0],
+    });
+
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+
 module.exports = router;

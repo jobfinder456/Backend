@@ -151,8 +151,8 @@ router.post("/verify-subscription", authMiddleware, async (req, res) => {
 
 // POST /cancel-subscription
 router.post("/cancel-subscription", authMiddleware, async (req, res) => {
-  const { subscription_id } = req.body;
-  const email = req.email;
+  const { subscription_id, email } = req.body;
+  //const email = req.email;
 
   if (!subscription_id) {
     return res.status(400).json({
@@ -184,8 +184,8 @@ router.post("/cancel-subscription", authMiddleware, async (req, res) => {
 console.log('Expiry Timestamp as number:', Number(expiryTimestamp));
 
      const check =  await executeQuery(
-  `UPDATE jb_users SET sub_id = NULL, sub_expiry = TO_TIMESTAMP($1) WHERE email = $2 RETURNING *`,
-  [Number(expiryTimestamp), email]
+  `UPDATE jb_users SET status = $3, sub_expiry = TO_TIMESTAMP($1) WHERE email = $2 RETURNING *`,
+  [Number(expiryTimestamp), email, "cancel"]
       );
         console.log(check)
       // Extract the data from the response object
@@ -307,14 +307,14 @@ router.get("/get-subscription", authMiddleware, async (req, res) => {
     }
 
   try {
-    const query = `SELECT sub_id FROM jb_users WHERE email = $1`;
+    const query = `SELECT sub_id, status FROM jb_users WHERE email = $1`;
     const values = [email];
 
         const result = await executeQuery(query, values); // Execute the query
         if (result.length == 0 || result[0].sub_id == null){
             return res.status(404).json({ success: false, message: "Subscription not found for this email." });
         }
-
+        console.log(result)
         const subscriptionId = result[0].sub_id;
         // Fetch subscription details from Razorpay API
         const razorpayResponse = await axios.get(
@@ -334,14 +334,40 @@ router.get("/get-subscription", authMiddleware, async (req, res) => {
         const { plan_id, customer_id, current_start, current_end, charge_at, end_at } = razorpayResponse.data;
 
         let plan_name = "Unknown"; 
-        if (plan_id === "plan_PoTHJFNlL9SzHX") {
+        if (plan_id === "plan_Po2Z7yEL8Z7Qm1") {
             plan_name = "Starter";
-        } else if (plan_id === "plan_PoTI8RZDB76ZyV") {
-            plan_name = "Companies";
+        } else if (plan_id === "plan_PpJsHEenU2Bkid") {
+            plan_name = "Growth";
         }
-
+        if(result[0].status  == "active"){
         return res.status(200).json({
             success: true,
+            email: email,
+            subscription_id: subscriptionId,
+            plan_name,
+            customer_id,
+            current_start,
+            current_end,
+            charge_at,
+            end_at,
+        });}
+        if(result[0].status == "cancel"){
+          return res.status(200).json({
+            success: true,
+            message:`Your subscription has been canceled`,
+            email: email,
+            subscription_id: subscriptionId,
+            plan_name,
+            customer_id,
+            current_start,
+            current_end,
+            charge_at,
+            end_at,
+        });
+        }
+        return res.status(200).json({
+            success: true,
+            message:`Your subscription is normal`,
             email: email,
             subscription_id: subscriptionId,
             plan_name,
