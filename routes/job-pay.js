@@ -45,7 +45,9 @@ router.post("/create-subscription", authMiddleware, async (req, res) => {
         if (result.length == 0 || result[0].sub_id == null){
             return res.status(404).json({ success: false, message: "Subscription not found for this email." });
         }
-        
+  if(result[0].status == "active"){
+    res.status(400).json({success: false, message:"subscription already active "})
+  }     
   if (!plan_id || !quantity) {
     return res.status(400).json({
       success: false,
