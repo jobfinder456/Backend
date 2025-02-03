@@ -15,7 +15,6 @@ const pool = new Pool({
   port: process.env.DB_PORT,
 });
 
-// Helper function for executing queries
 async function executeQuery(query, values = []) {
   const client = await pool.connect();
   try {
@@ -29,18 +28,24 @@ async function executeQuery(query, values = []) {
   }
 }
 
-// Helper function to get Razorpay auth credentials
 function getRazorpayAuth() {
   return `Basic ${Buffer.from(
     `${process.env.RAZORPAY_TEST_KEY_ID}:${process.env.RAZORPAY_TEST_KEY_SECRET}`
   ).toString("base64")}`;
 }
 
-// POST /create-subscription
 router.post("/create-subscription", authMiddleware, async (req, res) => {
   const { plan_id, quantity } = req.body;
+  const email = req.email
   const total_count = 12; // 12 months subscription
+  const query = `SELECT sub_id, status FROM jb_users WHERE email = $1`;
+    const values = [email];
 
+        const result = await executeQuery(query, values); // Execute the query
+        if (result.length == 0 || result[0].sub_id == null){
+            return res.status(404).json({ success: false, message: "Subscription not found for this email." });
+        }
+        
   if (!plan_id || !quantity) {
     return res.status(400).json({
       success: false,
@@ -76,7 +81,6 @@ router.post("/create-subscription", authMiddleware, async (req, res) => {
   }
 });
 
-// POST /verify-subscription
 router.post("/verify-subscription", authMiddleware, async (req, res) => {
   const { subscriptionId, plan_id } = req.body;
   const email = req.email;
@@ -87,9 +91,8 @@ router.post("/verify-subscription", authMiddleware, async (req, res) => {
       message: "Subscription ID and Plan ID are required.",
     });
   }
-  console.log("1")
+
   try {
-    // Step 1: Verify subscription status with Razorpay
     const url = `https://api.razorpay.com/v1/subscriptions/${subscriptionId}`;
     const response = await axios.get(url, {
       headers: {
@@ -99,8 +102,6 @@ router.post("/verify-subscription", authMiddleware, async (req, res) => {
     });
 
     const subscriptionStatus = response.data.status;
-    console.log("1", subscriptionStatus)
-    // Step 2: Check subscription status
     if (subscriptionStatus === "active") {
       if(plan_id==="plan_Po2Z7yEL8Z7Qm1"){
         const result = await updateCredits(email, 1000, subscriptionId, plan_id);
@@ -148,11 +149,9 @@ router.post("/verify-subscription", authMiddleware, async (req, res) => {
   }
 });
 
-
-// POST /cancel-subscription
 router.post("/cancel-subscription", authMiddleware, async (req, res) => {
-  const { subscription_id, email } = req.body;
-  //const email = req.email;
+  const { subscription_id, } = req.body;
+  const email = req.email;
 
   if (!subscription_id) {
     return res.status(400).json({
@@ -181,7 +180,7 @@ router.post("/cancel-subscription", authMiddleware, async (req, res) => {
       });
     }
     console.log('Expiry Timestamp:', expiryTimestamp);
-console.log('Expiry Timestamp as number:', Number(expiryTimestamp));
+    console.log('Expiry Timestamp as number:', Number(expiryTimestamp));
 
      const check =  await executeQuery(
   `UPDATE jb_users SET status = $3, sub_expiry = TO_TIMESTAMP($1) WHERE email = $2 RETURNING *`,
@@ -205,7 +204,6 @@ console.log('Expiry Timestamp as number:', Number(expiryTimestamp));
       });
   }
 });
-
 
 router.post("/upgrade-subscription", authMiddleware,async (req, res) => {
   const { subscription_id, new_plan_id, quantity, total_count } = req.body;
@@ -299,7 +297,6 @@ router.post("/upgrade-subscription", authMiddleware,async (req, res) => {
   }
 });
 
-
 router.get("/get-subscription", authMiddleware, async (req, res) => {
     const email = req.email;
     if (!email) {
@@ -386,7 +383,5 @@ router.get("/get-subscription", authMiddleware, async (req, res) => {
         });
     }
 });
-
-
 
 module.exports = router;
