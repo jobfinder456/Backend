@@ -320,6 +320,7 @@ router.get("/get-subscription", authMiddleware, async (req, res) => {
         }
         console.log(result)
         const subscriptionId = result[0].sub_id;
+        const status = result[0].status
         // Fetch subscription details from Razorpay API
         const razorpayResponse = await axios.get(
             `https://api.razorpay.com/v1/subscriptions/${subscriptionId}`,
@@ -346,6 +347,7 @@ router.get("/get-subscription", authMiddleware, async (req, res) => {
         if(result[0].status  == "active"){
         return res.status(200).json({
             success: true,
+            status:status,
             email: email,
             subscription_id: subscriptionId,
             plan_name,
@@ -359,6 +361,7 @@ router.get("/get-subscription", authMiddleware, async (req, res) => {
           return res.status(200).json({
             success: true,
             message:`Your subscription has been canceled`,
+            status:status,
             email: email,
             subscription_id: subscriptionId,
             plan_name,
