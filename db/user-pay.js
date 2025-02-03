@@ -65,39 +65,50 @@ const updateCredits = async (email, credits, subscriptionId, plan_id) => {
   }
 };
 
-async function getUserByEmail(email) {
+async function getUserCredits(email) {
   try {
-      const query = 'SELECT * FROM jb_users WHERE email = $1';
-      const rows  = await executeQuery(query, [email]);
-      console.log(rows)
-      return rows[0];
+    const query = "SELECT credits, current_credits FROM jb_users WHERE email = $1";
+    const result = await executeQuery(query, [email]);
+
+    if (!result || result.length === 0) {
+      throw new Error("User not found or no credits available.");
+    }
+
+    return result[0].current_credits;
   } catch (error) {
-      console.error("Error fetching user:", error);
-      throw error;
+    console.error("Error fetching user credits:", error.message);
+    throw error; // Re-throw the error for higher-level handling
   }
 }
 
-getUserByEmail("nikhilchopra1705@gmail.com")
-
-async function getUserCredits(email) {
-  const query = "SELECT credits, current_credits FROM jb_users WHERE email = $1";
-  const result = await executeQuery(query, [email]);
-  return result.length > 0 ? result[0].credits : null;
-}
-
 async function updateJobStatus(jobId, isOk) {
-  const query = "UPDATE jb_jobs SET is_ok = $1, last_update = CURRENT_DATE WHERE id = $2";
-  await executeQuery(query, [isOk, jobId]);
+  try {
+    const query = "UPDATE jb_jobs SET is_ok = $1, last_update = CURRENT_DATE WHERE id = $2";
+    await executeQuery(query, [isOk, jobId]);
+  } catch (error) {
+    console.error("Error updating job status:", error.message);
+    throw error;
+  }
 }
 
 async function deductUserCredits(email) {
-  const query = "UPDATE jb_users SET current_credits = current_credits - 1 WHERE email = $1";
-  await executeQuery(query, [email]);
+  try {
+    const query = "UPDATE jb_users SET current_credits = current_credits - 1 WHERE email = $1";
+    await executeQuery(query, [email]);
+  } catch (error) {
+    console.error("Error deducting user credits:", error.message);
+    throw error;
+  }
 }
 
 async function addUserCredits(email) {
-  const query = "UPDATE jb_users SET credits = credits + 1 WHERE email = $1";
-  await executeQuery(query, [email]);
+  try {
+    const query = "UPDATE jb_users SET current_credits = current_credits + 1 WHERE email = $1";
+    await executeQuery(query, [email]);
+  } catch (error) {
+    console.error("Error adding user credits:", error.message);
+    throw error;
+  }
 }
 
 module.exports = {

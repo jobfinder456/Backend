@@ -11,26 +11,22 @@ router.put("/toggle",authMiddleware, async (req, res) => {
     }
   
     try {
-      // Get user credits
       const userCredits = await getUserCredits(email);
-  /*
+  
       if (userCredits === null ) {
-        return res.status(404).json({ success: false, message: "User not found." });
+        return res.status(404).json({ success: false, message: "User has no credits" });
       }
-  */
       if (is_ok) {
-        // If is_ok is true and the user has enough credits
         if (userCredits > 0 ) {
-          await updateJobStatus(job_id, is_ok); // Update job status
-          await deductUserCredits(email); // Deduct one credit
+          await updateJobStatus(job_id, is_ok); 
+          await deductUserCredits(email); 
           return res.status(200).json({ success: true, message: "Job updated and credits deducted successfully." });
         } else {
           return res.status(400).json({ success: false, message: "Insufficient credits." });
         }
       } else {
-        // If is_ok is false
-        await updateJobStatus(job_id, is_ok); // Update job status
-        await addUserCredits(email); // Add one credit
+        await updateJobStatus(job_id, is_ok); 
+        await addUserCredits(email); 
         return res.status(200).json({ success: true, message: "Job updated and one credit added successfully." });
       }
     } catch (error) {
@@ -38,7 +34,5 @@ router.put("/toggle",authMiddleware, async (req, res) => {
       return res.status(500).json({ success: false, message: "Internal server error." });
     }
   });
-
-
 
 module.exports = router;
