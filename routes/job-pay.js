@@ -34,28 +34,31 @@ function getRazorpayAuth() {
   ).toString("base64")}`;
 }
 
-router.post("/create-subscription", authMiddleware, async (req, res) => {
+router.post("/create-subscription", authMiddleware,async (req, res) => {
   const { plan_id, quantity } = req.body;
-  const email = req.email
-  const total_count = 12; // 12 months subscription
+  const email = req.email 
+  const total_count = 12; // 12-month subscription
   const query = `SELECT sub_id, status FROM jb_users WHERE email = $1`;
-    const values = [email];
-
-        const result = await executeQuery(query, values); // Execute the query
-        if (result.length == 0 || result[0].sub_id == null){
-            return res.status(404).json({ success: false, message: "Subscription not found for this email." });
-        }
-  if(result[0].status == "active"){
-    res.status(400).json({success: false, message:"subscription already active "})
-  }     
-  if (!plan_id || !quantity) {
-    return res.status(400).json({
-      success: false,
-      message: "Plan ID and quantity are required.",
-    });
-  }
+  const values = [email];
 
   try {
+    const result = await executeQuery(query, values); // Execute the query
+
+    // Only check subscription status if a user is found
+    if (result.length > 0 && result[0].status === "active") {
+      return res.status(400).json({
+        success: false,
+        message: "Subscription already active.",
+      });
+    }
+
+    if (!plan_id || !quantity) {
+      return res.status(400).json({
+        success: false,
+        message: "Plan ID and quantity are required.",
+      });
+    }
+
     const url = "https://api.razorpay.com/v1/subscriptions";
     const response = await axios.post(
       url,
@@ -82,6 +85,7 @@ router.post("/create-subscription", authMiddleware, async (req, res) => {
     });
   }
 });
+
 
 router.post("/verify-subscription", authMiddleware, async (req, res) => {
   const { subscriptionId, plan_id } = req.body;

@@ -11,6 +11,7 @@ const {
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const { Pool } = require("pg");
 const { authMiddleware } = require("../auth/middleware");
+const { route } = require("./user");
 
 
 router.use(express.json());
@@ -210,5 +211,11 @@ router.put("/profile", authMiddleware, async (req, res) => {
   }
 });
 
+router.delete("/profile",authMiddleware,async(req,res)=>{
+  //const email = req.email
+  const {email } = req.body
+  
+
+})
 
 module.exports = router;
