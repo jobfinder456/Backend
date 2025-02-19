@@ -210,7 +210,6 @@ router.get("/user/impressions", authMiddleware, async (req, res) => {
 router.get("/companies", async (req, res) => {
   try {
     const companies = await getAllCompanies();
-    console.log(companies)
     res.status(200).json({ success: true, data: companies });
   } catch (error) {
     console.error(error);

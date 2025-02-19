@@ -33,7 +33,6 @@ cron.schedule('0 0 * * *', async () => {
       
       await executeQuery(query);
 
-      console.log("Credits removed for expired subscriptions.");
   } catch (error) {
       console.error("Error removing credits:", error);
   }
@@ -67,14 +66,14 @@ const updateCredits = async (email, credits, subscriptionId, plan_id) => {
 
 async function getUserCredits(email) {
   try {
-    const query = "SELECT credits, current_credits FROM jb_users WHERE email = $1";
+    const query = "SELECT credits FROM jb_users WHERE email = $1";
     const result = await executeQuery(query, [email]);
 
     if (!result || result.length === 0) {
       throw new Error("User not found or no credits available.");
     }
 
-    return result[0].current_credits;
+    return result[0].credits;
   } catch (error) {
     console.error("Error fetching user credits:", error.message);
     throw error; // Re-throw the error for higher-level handling
@@ -93,7 +92,7 @@ async function updateJobStatus(jobId, isOk) {
 
 async function deductUserCredits(email) {
   try {
-    const query = "UPDATE jb_users SET current_credits = current_credits - 1 WHERE email = $1";
+    const query = "UPDATE jb_users SET credits = credits - 1 WHERE email = $1";
     await executeQuery(query, [email]);
   } catch (error) {
     console.error("Error deducting user credits:", error.message);
@@ -103,7 +102,7 @@ async function deductUserCredits(email) {
 
 async function addUserCredits(email) {
   try {
-    const query = "UPDATE jb_users SET current_credits = current_credits + 1 WHERE email = $1";
+    const query = "UPDATE jb_users SET credits = credits + 1 WHERE email = $1";
     await executeQuery(query, [email]);
   } catch (error) {
     console.error("Error adding user credits:", error.message);

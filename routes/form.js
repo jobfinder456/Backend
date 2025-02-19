@@ -107,6 +107,21 @@ router.get("/profile", authMiddleware, async (req, res) => {
   }
 });
 
+router.get("/sitemap/jobs", async (req, res) => {
+  try {
+    const result = await executeQuery("SELECT id FROM jb_jobs");
+    console.log("Query Result:", result);
+
+    // Fix: Directly map `result` instead of `result.rows`
+    const jobIds = result.map((row) => row.id);
+
+    res.status(200).json({ jobIds });
+  } catch (error) {
+    console.error("❌ Error fetching job IDs:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 
 router.post("/s3logo", authMiddleware, async (req, res) => {
   try {

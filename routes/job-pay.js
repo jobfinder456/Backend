@@ -1,4 +1,4 @@
-express = require("express");
+const express = require("express");
 const router = express.Router();
 const axios = require("axios");
 const { otpSenderMail } = require("../db/mail");
@@ -30,7 +30,7 @@ async function executeQuery(query, values = []) {
 
 function getRazorpayAuth() {
   return `Basic ${Buffer.from(
-    `${process.env.RAZORPAY_TEST_KEY_ID}:${process.env.RAZORPAY_TEST_KEY_SECRET}`
+    `${process.env.RAZORPAY_KEY_ID}:${process.env.RAZORPAY_KEY_SECRET}`
   ).toString("base64")}`;
 }
 
@@ -111,7 +111,6 @@ router.post("/verify-subscription", authMiddleware, async (req, res) => {
     if (subscriptionStatus === "active") {
       if(plan_id==="plan_Po2Z7yEL8Z7Qm1"){
         const result = await updateCredits(email, 1000, subscriptionId, plan_id);
-        console.log(result)
         if (!result) {
             return res.status(404).json({
                 success: false,
@@ -130,10 +129,19 @@ router.post("/verify-subscription", authMiddleware, async (req, res) => {
       });
     }
   }
+  if(plan_id==="plan_PoTI8RZDB76ZyV"){
+    const result = await updateCredits(email, 25, subscriptionId, plan_id);
+
+  if (!result) {
+    return res.status(404).json({
+      success: false,
+      message: "User with the given email not found.",
+    });
+  }
+}
     const subject = "Subscription Activated";
     const message = `Dear User,\n\nYour subscription (ID: ${subscriptionId}) has been successfully activated.`;
     otpSenderMail(email, subject, message);
-    console.log("1 all done")
     return res.status(200).json({
       success: true,
       message: "Subscription verified and activated successfully.",
@@ -174,8 +182,8 @@ router.post("/cancel-subscription", authMiddleware, async (req, res) => {
         { "cancel_at_cycle_end":1 },
         {
             auth: {
-                username: process.env.RAZORPAY_TEST_KEY_ID,  // Ensure you're using the correct key
-                password: process.env.RAZORPAY_TEST_KEY_SECRET
+                username: process.env.RAZORPAY_KEY_ID,  // Ensure you're using the correct key
+                password: process.env.RAZORPAY_KEY_SECRET
             }
         }
     );
@@ -186,14 +194,10 @@ router.post("/cancel-subscription", authMiddleware, async (req, res) => {
         message: "Could not fetch subscription expiration date.",
       });
     }
-    console.log('Expiry Timestamp:', expiryTimestamp);
-    console.log('Expiry Timestamp as number:', Number(expiryTimestamp));
-
-     const check =  await executeQuery(
+       await executeQuery(
   `UPDATE jb_users SET status = $3, sub_expiry = TO_TIMESTAMP($1) WHERE email = $2 RETURNING *`,
   [Number(expiryTimestamp), email, "cancel"]
       );
-        console.log(check)
       // Extract the data from the response object
       const responseData = response.data;  // Get only the 'data' from the response
 
@@ -224,17 +228,13 @@ router.post("/upgrade-subscription", authMiddleware,async (req, res) => {
   }
 
   try {
-      // Debugging: Log the subscription ID and new plan ID
-      console.log("Subscription ID:", subscription_id);
-      console.log("New Plan ID:", new_plan_id);
-
       // Step 1: Fetch the current subscription to ensure it exists
       const existingSubscription = await axios.get(
           `https://api.razorpay.com/v1/subscriptions/${subscription_id}`,
           {
               auth: {
-                  username: process.env.RAZORPAY_TEST_KEY_ID,  // Ensure you're using the correct key
-                  password: process.env.RAZORPAY_TEST_KEY_SECRET
+                  username: process.env.RAZORPAY_KEY_ID,  // Ensure you're using the correct key
+                  password: process.env.RAZORPAY_KEY_SECRET
               }
           }
       );
@@ -252,8 +252,8 @@ router.post("/upgrade-subscription", authMiddleware,async (req, res) => {
           {},
           {
               auth: {
-                  username: process.env.RAZORPAY_TEST_KEY_ID,  // Ensure you're using the correct key
-                  password: process.env.RAZORPAY_TEST_KEY_SECRET
+                  username: process.env.RAZORPAY_KEY_ID,  // Ensure you're using the correct key
+                  password: process.env.RAZORPAY_KEY_SECRET
               }
           }
       );
@@ -268,8 +268,8 @@ router.post("/upgrade-subscription", authMiddleware,async (req, res) => {
           },
           {
               auth: {
-                  username: process.env.RAZORPAY_TEST_KEY_ID,  // Ensure you're using the correct key
-                  password: process.env.RAZORPAY_TEST_KEY_SECRET
+                  username: process.env.RAZORPAY_KEY_ID,  // Ensure you're using the correct key
+                  password: process.env.RAZORPAY_KEY_SECRET
               }
           }
       );
@@ -318,7 +318,6 @@ router.get("/get-subscription", authMiddleware, async (req, res) => {
         if (result.length == 0 || result[0].sub_id == null){
             return res.status(404).json({ success: false, message: "Subscription not found for this email." });
         }
-        console.log(result)
         const subscriptionId = result[0].sub_id;
         const status = result[0].status
         // Fetch subscription details from Razorpay API
@@ -326,12 +325,11 @@ router.get("/get-subscription", authMiddleware, async (req, res) => {
             `https://api.razorpay.com/v1/subscriptions/${subscriptionId}`,
             {
                 auth: {
-                    username: process.env.RAZORPAY_TEST_KEY_ID,   // Razorpay API Key
-                    password: process.env.RAZORPAY_TEST_KEY_SECRET,   // Razorpay API Secret
+                    username: process.env.RAZORPAY_KEY_ID,   // Razorpay API Key
+                    password: process.env.RAZORPAY_KEY_SECRET,   // Razorpay API Secret
                 },
             }
         );
-        console.log(razorpayResponse)
         
         if (!razorpayResponse ) {
           return res.status(400).json({ success: false, message:"no subscription found" });
@@ -339,14 +337,15 @@ router.get("/get-subscription", authMiddleware, async (req, res) => {
         const { plan_id, customer_id, current_start, current_end, charge_at, end_at } = razorpayResponse.data;
 
         let plan_name = "Unknown"; 
-        if (plan_id === "plan_Po2Z7yEL8Z7Qm1") {
+        if (plan_id === "plan_PoTHJFNlL9SzHX") {
             plan_name = "Starter";
-        } else if (plan_id === "plan_PpJsHEenU2Bkid") {
+        } else if (plan_id === "plan_PoTI8RZDB76ZyV") {
             plan_name = "Growth";
         }
         if(result[0].status  == "active"){
         return res.status(200).json({
             success: true,
+            message:" You subscription is active",
             status:status,
             email: email,
             subscription_id: subscriptionId,
@@ -374,7 +373,7 @@ router.get("/get-subscription", authMiddleware, async (req, res) => {
         }
         return res.status(200).json({
             success: true,
-            message:`Your subscription is normal`,
+            message:`Your subscription has been created`,
             email: email,
             subscription_id: subscriptionId,
             plan_name,
