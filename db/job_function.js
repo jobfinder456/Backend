@@ -1,5 +1,6 @@
 const { Pool } = require("pg"); 
 const cron = require("node-cron");
+const axios = require("axios");
 const path = require("path");
 
 require("dotenv").config({ path: path.join(__dirname, "../.env") });
@@ -20,29 +21,44 @@ async function executeQuery(query, values = []) {
     client.release();
   }
 }
-/*
-async function updateJobStatus() {
-  const query = `
-    UPDATE jb_jobs 
-    SET is_ok = false 
-    WHERE is_ok = true 
-    AND last_update < (CURRENT_DATE - INTERVAL '31 days')
-    RETURNING *;
-  `;
-
+async function checkLinks() {
   try {
-    const result = await executeQuery(query);
-    return result;
+    // Get all job links
+    const result = await executeQuery("SELECT id, job_link FROM JB_JOBS");
+
+    if (!result ) {
+      console.log("⚠️ No jobs found.");
+      return;
+    }
+
+    for (const job of result) {
+      const { id, job_link } = job;
+
+      try {
+        const response = await axios.get(job_link, { timeout: 5000 });
+
+        if (response.status === 200) {
+          await executeQuery("UPDATE JB_JOBS SET link_check = 'valid' WHERE id = $1", [id]);
+          console.log(`✅ ${job_link} is valid`);
+        } else {
+          await executeQuery("UPDATE JB_JOBS SET link_check = 'invalid' WHERE id = $1", [id]);
+          console.log(`❌ ${job_link} returned ${response.status}`);
+        }
+      } catch (error) {
+        await executeQuery("UPDATE JB_JOBS SET link_check = 'invalid' WHERE id = $1", [id]);
+        console.log(`❌ ${job_link} is invalid: ${error.message}`);
+      }
+    }
   } catch (error) {
-    console.error("Error updating job statuses:", error);
-    return null;
+    console.error("Error checking job links:", error);
   }
 }
 
-cron.schedule("0 0 * * *", async () => {
-  await updateJobStatus();
+// Schedule the job to run every 12 hours
+cron.schedule("0 0 * * *", () => {
+  console.log("🔄 Running link validation job...");
+  checkLinks();
 });
-*/
 
 async function jobUpdate(jobIds) {
   const queryText =
@@ -105,6 +121,8 @@ async function getData(offset, limit, searchTerm, location, remote, categories, 
       FROM JB_JOBS
       JOIN company_profile 
         ON JB_JOBS.company_profile_id = company_profile.id
+      WHERE JB_JOBS.is_ok = true 
+        AND JB_JOBS.link_check = 'valid'  -- ✅ Only include jobs where link_check is valid
     `;
 
     let conditions = []; 
@@ -149,7 +167,7 @@ async function getData(offset, limit, searchTerm, location, remote, categories, 
     }
 
     if (conditions.length > 0) {
-      query += ` WHERE ` + conditions.join(" AND ");
+      query += ` AND ` + conditions.join(" AND ");  // ✅ Updated to use `AND` instead of `WHERE`
     }
 
     query += ` ORDER BY JB_JOBS.last_update DESC`;
