@@ -109,7 +109,6 @@ async function getuserjobData(email, page) {
   }
 }
 
-
 async function getData(offset, limit, searchTerm, location, remote, categories, level, compensation, commitment) {
   try {
     let query = `
@@ -167,10 +166,11 @@ async function getData(offset, limit, searchTerm, location, remote, categories, 
     }
 
     if (conditions.length > 0) {
-      query += ` AND ` + conditions.join(" AND ");  // ✅ Updated to use `AND` instead of `WHERE`
+      query += ` AND ` + conditions.join(" AND ");  
     }
 
-    query += ` ORDER BY JB_JOBS.last_update DESC`;
+    // ✅ Order by RANDOM() instead of last_update
+    query += ` ORDER BY RANDOM()`;
 
     query += ` OFFSET $${params.length + 1} LIMIT $${params.length + 2}`;
     params.push(offset, limit);
