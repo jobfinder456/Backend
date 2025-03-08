@@ -44,14 +44,15 @@ router.post("/blogs", async (req, res) => {
 
 // GET route to fetch all blogs (only id and title)
 router.get("/blogs", async (req, res) => {
-  try {
-    const query = "SELECT id, title FROM blogs";
-    const blogs = await executeQuery(query);
-    res.json({ success: true, blogs });
-  } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
+    try {
+      const query = "SELECT id, title, LEFT(body, 40) AS description FROM blogs";
+      const blogs = await executeQuery(query);
+      res.json({ success: true, blogs });
+    } catch (error) {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+  
 
 // GET route to fetch a single blog by ID
 router.get("/blogs/:id", async (req, res) => {
