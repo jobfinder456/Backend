@@ -6,6 +6,7 @@ const profile = require("./routes/form");
 const pay = require("./routes/job-pay");
 const user = require("./routes/user")
 const user_pay = require("./routes/user-pay")
+const admin = require("./routes/admin")
 const cookieParser = require('cookie-parser');
 
 app.use(express.json());
@@ -24,6 +25,7 @@ app.use("/api/v1", job);
 app.use("/api/v1", pay);
 app.use("/api/v1", user)
 app.use("/api/v1", user_pay)
+app.use("/api/v1", admin)
 
 app.get("/", (req, res) => {
   res.send("Server is up and running!");
